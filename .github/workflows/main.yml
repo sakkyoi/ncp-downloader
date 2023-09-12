@@ -19,7 +19,7 @@ jobs:
 
     - run: pip install -r requirements.txt pyinstaller Pillow
     - run: pyinstaller main.py --onefile --collect-data=grapheme --name=ncp --icon=ncp.ico
-    - run: ./dist/ncp
+    - run: ./dist/ncp -v
     - uses: actions/upload-artifact@v2
       with:
         path: dist/*

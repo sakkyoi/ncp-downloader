@@ -20,6 +20,7 @@ if __name__ == '__main__':
     parser.add_argument('-vcodec', help='video codec', default='copy')
     parser.add_argument('-acodec', help='audio codec', default='copy')
     parser.add_argument('-ffmpeg', help='ffmpeg path', default='ffmpeg')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0.0')
     args = parser.parse_args()
 
     query = args.input
