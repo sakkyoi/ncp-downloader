@@ -12,14 +12,14 @@ jobs:
         os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v4
       with:
         python-version: 3.8
 
     - run: pip install -r requirements.txt pyinstaller Pillow
     - run: pyinstaller main.py --onefile --collect-data=grapheme --name=ncp --icon=ncp.ico
     - run: ./dist/ncp -v
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         path: dist/*
