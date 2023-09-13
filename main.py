@@ -5,6 +5,7 @@ from click import confirm
 from urllib.parse import urlparse
 from util.m3u8_downloader import M3U8Downloader
 from util.channel_downloader import ChannelDownloader
+from util.ffmpeg import FFMPEG
 from sys import exit
 
 
@@ -40,6 +41,11 @@ if __name__ == '__main__':
     except ValueError:
         print('Invalid resolution, get highest resolution')
         target_resolution = None
+
+    if transcode:
+        ffmpeg = FFMPEG(ffmpeg)
+        if not ffmpeg.check():
+            raise FileNotFoundError('ffmpeg not found')
 
     try:
         nico = NicoChannelPlus()

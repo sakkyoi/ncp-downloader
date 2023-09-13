@@ -4,14 +4,9 @@ import re
 
 
 class FFMPEG:
-    def __init__(self, _input: str, _output: str,
-                 ffmpeg: str, vcodec: str, acodec: str) -> None:
-        self.cmd = [ffmpeg,
-                    '-progress', '-', '-nostats', '-y',
-                    '-i', _input,
-                    '-vcodec', vcodec,
-                    '-acodec', acodec,
-                    _output]
+    def __init__(self, ffmpeg: str = 'ffmpeg') -> None:
+        self.ffmpeg = ffmpeg
+        self.cmd = None
         self.process = None
 
         self.total_duration = None
@@ -24,8 +19,23 @@ class FFMPEG:
             r'out_time=(?P<hour>\d{2}):(?P<min>\d{2}):(?P<sec>\d{2})\.(?P<ms>\d{2})'
         )
 
-    def run(self) -> Iterator[float]:
+    def check(self) -> bool:
+        """Check if ffmpeg is installed"""
+        try:
+            subprocess.run([self.ffmpeg, '-version'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return True
+        except FileNotFoundError:
+            return False
+
+    def run(self, _input: str, _output: str, vcodec: str, acodec: str) -> Iterator[float]:
         """Run ffmpeg command and yield progress"""
+        self.cmd = [self.ffmpeg,
+                    '-progress', '-', '-nostats', '-y',
+                    '-i', _input,
+                    '-vcodec', vcodec,
+                    '-acodec', acodec,
+                    _output]
+
         self.process = subprocess.Popen(
             self.cmd,
             stdin=subprocess.PIPE,
@@ -62,6 +72,7 @@ class FFMPEG:
                     progress = int(progress_time.group('hour')) * 3600 + int(progress_time.group('min')) * 60 + int(
                         progress_time.group('sec'))
                     yield progress / self.total_duration  # yield progress
+
 
 
 if __name__ == '__main__':
