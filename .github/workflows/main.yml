@@ -25,5 +25,4 @@ jobs:
     - uses: softprops/action-gh-release@v1
       with:
         files: dist/*
-        tag_name: ${{ github.sha }}
         token: ${{ secrets.GITHUB_TOKEN }}
