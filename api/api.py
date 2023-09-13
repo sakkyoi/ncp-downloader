@@ -146,7 +146,7 @@ class NicoChannelPlus:
         video_page = self.get_video_page(content_code)
         title = video_page['title'] if video_page is not None \
             else 'private' if known_title is None else known_title
-        title = sanitize_filename(title)  # sanitize filename
+        title = sanitize_filename(title, '_')  # sanitize filename
 
         if video_page is not None:
             release_at = datetime.strptime(video_page['released_at'], '%Y-%m-%d %H:%M:%S')
