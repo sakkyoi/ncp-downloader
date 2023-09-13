@@ -10,6 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
+        name: ['windows', 'ubuntu', 'macos']
 
     steps:
     - uses: actions/checkout@v4
@@ -18,9 +19,10 @@ jobs:
         python-version: 3.8
 
     - run: pip install -r requirements.txt pyinstaller Pillow
-    - run: pyinstaller main.py --onefile --collect-data=grapheme --name=ncp-${{ runner.os }}-${{ runner.arch }} --icon=ncp.ico
-    - run: ./dist/ncp-${{ runner.os }}-${{ runner.arch }} -v
+    - run: pyinstaller main.py --onefile --collect-data=grapheme --name=ncp-${{ matrix.name }} --icon=ncp.ico
+    - run: ./dist/ncp-${{ matrix.name }} -v
     - uses: softprops/action-gh-release@v1
       with:
         files: dist/*
         tag_name: ${{ github.sha }}
+        token: ${{ github.token }}
