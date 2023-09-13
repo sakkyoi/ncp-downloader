@@ -74,6 +74,5 @@ class FFMPEG:
                     yield progress / self.total_duration  # yield progress
 
 
-
 if __name__ == '__main__':
     pass
