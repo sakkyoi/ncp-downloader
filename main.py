@@ -43,8 +43,7 @@ if __name__ == '__main__':
         target_resolution = None
 
     if transcode:
-        ffmpeg = FFMPEG(ffmpeg)
-        if not ffmpeg.check():
+        if not FFMPEG(ffmpeg).check():
             raise FileNotFoundError('ffmpeg not found')
 
     try:
