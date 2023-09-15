@@ -88,7 +88,7 @@ class ChannelManager:
             self._continue = confirm('Found existing task, do you want to continue?', default=True)
             self.continue_exists_video = confirm('Continue existing videos task?', default=True)
         else:
-            self.continue_exists_video = False
+            self.continue_exists_video = True if self._continue else False
 
         if self.channel_db_path.exists() and self._continue:
             db = TinyDB(self.channel_db_path)
