@@ -21,6 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('-vcodec', help='video codec', default='copy')
     parser.add_argument('-acodec', help='audio codec', default='copy')
     parser.add_argument('-ffmpeg', help='ffmpeg path', default='ffmpeg')
+    parser.add_argument('--ffmpeg-options', help='ffmpeg options', default='')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0.0')
     args = parser.parse_args()
 
@@ -33,6 +34,7 @@ if __name__ == '__main__':
     vcodec = args.vcodec
     acodec = args.acodec
     ffmpeg = args.ffmpeg
+    ffmpeg_options = args.ffmpeg_options.split(' ')
 
     try:
         target_resolution = tuple(map(int, args.resolution.split('x')))
@@ -60,8 +62,8 @@ if __name__ == '__main__':
             M3U8Downloader(session_id,
                            f'{output_dir}/{output_name}',
                            (1920, 1080),
-                           _continue=True if continue_all or yes else None,
-                           transcode=transcode, ffmpeg=ffmpeg, acodec=acodec, vcodec=vcodec)
+                           _continue=True if continue_all or yes else None, transcode=transcode,
+                           ffmpeg=ffmpeg, acodec=acodec, vcodec=vcodec, ffmpeg_options=ffmpeg_options)
         else:
             if not private and yes:
                 private = yes
@@ -85,7 +87,8 @@ if __name__ == '__main__':
                     video_list = [ContentCode(video['content_code']) for video in video_list]
                 ChannelDownloader(channel_id, video_list, output=f'{output_dir}/{channel_info["fanclub_site_name"]}',
                                   target_resolution=target_resolution, _continue=continue_all or yes or None,
-                                  transcode=transcode, ffmpeg=ffmpeg, acodec=acodec, vcodec=vcodec)
+                                  transcode=transcode, ffmpeg=ffmpeg, acodec=acodec, vcodec=vcodec,
+                                  ffmpeg_options=ffmpeg_options)
     except KeyboardInterrupt:
         exit(0)
     except Exception as e:

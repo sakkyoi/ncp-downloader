@@ -13,8 +13,8 @@ from util.manager import M3U8Manager
 
 class M3U8Downloader:
     def __init__(self, session_id: SessionID, output: str, targer_resolution: tuple = None, wait: float = 1,
-                 _continue: bool = None,
-                 transcode: bool = None, ffmpeg: str = 'ffmpeg', acodec: str = 'copy', vcodec: str = 'copy',
+                 _continue: bool = None, transcode: bool = None,
+                 ffmpeg: str = 'ffmpeg', acodec: str = 'copy', vcodec: str = 'copy', ffmpeg_options: list = None,
                  tip: str = None) -> None:
         """
         Download video from m3u8 url
@@ -35,6 +35,7 @@ class M3U8Downloader:
         self.ffmpeg = ffmpeg
         self.acodec = acodec
         self.vcodec = vcodec
+        self.ffmpeg_options = ffmpeg_options
         self.tip = tip
 
         self.M3U8Manager = M3U8Manager(f'{self.output}.ts', _continue=self._continue)
@@ -124,7 +125,7 @@ class M3U8Downloader:
             self.bar.title(f'Transcoding video {self.tip if self.tip is not None else ""}')
             _input = Path(f'{self.output}.ts')
             _output = f'{_input.parent.joinpath(_input.stem)}.mp4'
-            ffmpeg = FFMPEG(self.ffmpeg).run(str(_input), _output, self.acodec, self.vcodec)
+            ffmpeg = FFMPEG(self.ffmpeg).run(str(_input), _output, self.acodec, self.vcodec, self.ffmpeg_options)
             while True:
                 n = next(ffmpeg)
 

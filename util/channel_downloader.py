@@ -6,8 +6,8 @@ from util.manager import ChannelManager
 class ChannelDownloader:
     def __init__(self, channel_id: ChannelID, video_list: list, output: str = 'output',
                  target_resolution: tuple = None, wait: float = 1,
-                 _continue: bool = None,
-                 transcode: bool = None, ffmpeg: str = 'ffmpeg', acodec: str = 'copy', vcodec: str = 'copy') -> None:
+                 _continue: bool = None, transcode: bool = None, ffmpeg: str = 'ffmpeg',
+                 acodec: str = 'copy', vcodec: str = 'copy', ffmpeg_options: list = None) -> None:
         self.nico = NicoChannelPlus()
         self.channel_id = channel_id
         self.video_list = video_list
@@ -19,6 +19,7 @@ class ChannelDownloader:
         self.ffmpeg = ffmpeg
         self.acodec = acodec
         self.vcodec = vcodec
+        self.ffmpeg_options = ffmpeg_options
 
         self.ChannelManager = ChannelManager(self.output, wait=self.wait, _continue=self._continue)
 
@@ -42,8 +43,8 @@ class ChannelDownloader:
             output_name, _ = self.nico.get_video_name(video, self.ChannelManager.get_title(str(video)))
             m3u8_downloader = M3U8Downloader(session_id, f'{self.output}/{output_name}', self.target_resolution,
                                              _continue=self.ChannelManager.continue_exists_video,
-                                             transcode=self.transcode,
-                                             ffmpeg=self.ffmpeg, acodec=self.acodec, vcodec=self.vcodec,
+                                             transcode=self.transcode, ffmpeg=self.ffmpeg,
+                                             acodec=self.acodec, vcodec=self.vcodec, ffmpeg_options=self.ffmpeg_options,
                                              tip=f'({self.done+1}/{self.total})')
             if m3u8_downloader.done:
                 self.ChannelManager.set_status(str(video), True)

@@ -27,14 +27,14 @@ class FFMPEG:
         except FileNotFoundError:
             return False
 
-    def run(self, _input: str, _output: str, vcodec: str, acodec: str) -> Iterator[float]:
+    def run(self, _input: str, _output: str, vcodec: str, acodec: str, options: list) -> Iterator[float]:
         """Run ffmpeg command and yield progress"""
         self.cmd = [self.ffmpeg,
                     '-progress', '-', '-nostats', '-y',
                     '-i', _input,
+                    _output,
                     '-vcodec', vcodec,
-                    '-acodec', acodec,
-                    _output]
+                    '-acodec', acodec] + options
 
         self.process = subprocess.Popen(
             self.cmd,
