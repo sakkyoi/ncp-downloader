@@ -34,7 +34,11 @@ if __name__ == '__main__':
     vcodec = args.vcodec
     acodec = args.acodec
     ffmpeg = args.ffmpeg
-    ffmpeg_options = args.ffmpeg_options.split(' ')
+    ffmpeg_options = args.ffmpeg_options
+    if ffmpeg_options != '':
+        ffmpeg_options = ffmpeg_options.split(' ')
+    else:
+        ffmpeg_options = []
 
     try:
         target_resolution = tuple(map(int, args.resolution.split('x')))

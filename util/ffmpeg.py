@@ -1,3 +1,4 @@
+import os
 import subprocess
 from typing import Iterator
 import re
@@ -32,27 +33,20 @@ class FFMPEG:
         self.cmd = [self.ffmpeg,
                     '-progress', '-', '-nostats', '-y',
                     '-i', _input,
-                    _output,
                     '-vcodec', vcodec,
-                    '-acodec', acodec] + options
+                    '-acodec', acodec] + options + [_output]
 
         self.process = subprocess.Popen(
             self.cmd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            universal_newlines=False
+            close_fds=False
         )
 
-        while True:
+        while self.process.poll() is None:
             if self.process.stdout is None:
                 continue
-
-            if self.process.poll() is not None:
-                if self.process.poll() != 0:
-                    raise RuntimeError(f'Error while transcoding: {self.last_line}')
-                else:
-                    yield 999
 
             line = self.process.stdout.readline().decode('utf-8', errors='replace').strip()
 
@@ -72,6 +66,11 @@ class FFMPEG:
                     progress = int(progress_time.group('hour')) * 3600 + int(progress_time.group('min')) * 60 + int(
                         progress_time.group('sec'))
                     yield progress / self.total_duration  # yield progress
+
+        if self.process.poll() != 0:
+            raise RuntimeError(f'Error while transcoding: {self.last_line}')
+        else:
+            yield 999
 
 
 if __name__ == '__main__':

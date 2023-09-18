@@ -125,7 +125,8 @@ class M3U8Downloader:
             self.bar.title(f'Transcoding video {self.tip if self.tip is not None else ""}')
             _input = Path(f'{self.output}.ts')
             _output = f'{_input.parent.joinpath(_input.stem)}.mp4'
-            ffmpeg = FFMPEG(self.ffmpeg).run(str(_input), _output, self.acodec, self.vcodec, self.ffmpeg_options)
+
+            ffmpeg = FFMPEG(self.ffmpeg).run(str(_input), _output, self.vcodec, self.acodec, self.ffmpeg_options)
             while True:
                 n = next(ffmpeg)
 
