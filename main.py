@@ -4,6 +4,7 @@ import click
 from click import confirm
 import typer
 from typing_extensions import Annotated
+from typing import Optional
 from rich.console import Console
 from urllib.parse import urlparse
 from pathlib import Path
@@ -64,58 +65,63 @@ def main(
             ),
         ] = None,
         resume: Annotated[
-            bool,
+            Optional[bool],
             typer.Option(
-                '--resume', '-R',
+                '--resume/--new', '-R/-N',
+                show_default=False,
                 help='Resume download.',
             ),
         ] = None,
         private: Annotated[
-            bool,
+            Optional[bool],
             typer.Option(
-                '--private', '-p',
+                '--private/--normal', '-p/-np',
+                show_default=False,
                 help='Download private videos.',
             ),
         ] = None,
         yes: Annotated[
-            bool,
+            Optional[bool],
             typer.Option(
-                '--yes', '-y',
+                '--yes/--no', '-y/-n',
+                show_default=False,
                 help='Skip confirmation.',
             ),
         ] = None,
         transcode: Annotated[
             bool,
             typer.Option(
-                '--transcode', '-t',
+                '--transcode/--direct', '-t',
+                show_default=True,
                 help='Transcode video.',
             ),
         ] = False,
         ffmpeg: Annotated[
             str,
             typer.Option(
-                '--ffmpeg', '-ffmpeg',
+                '--ffmpeg',
                 help='Path to ffmpeg.',
             ),
         ] = 'ffmpeg',
         vcodec: Annotated[
             str,
             typer.Option(
-                '--vcodec', '-vcodec',
+                '--vcodec',
                 help='Video codec for ffmpeg.',
             ),
         ] = 'copy',
         acodec: Annotated[
             str,
             typer.Option(
-                '--acodec', '-acodec',
+                '--acodec',
                 help='Audio codec for ffmpeg.',
             ),
         ] = 'copy',
         ffmpeg_options: Annotated[
             FFMPEGOptions,
             typer.Option(
-                '--ffmpeg-options', '-ffmpeg-options',
+                '--ffmpeg-options',
+                show_default=False,
                 help='Options for ffmpeg.',
                 click_type=FFMPEGOptions(),
             ),
@@ -123,12 +129,15 @@ def main(
         debug: Annotated[
             bool,
             typer.Option(
+                '--debug',
+                show_default=False,
                 help='Enable debugging.',
             ),
         ] = False,
 ) -> None:
     """Nico Channel Plus Downloader"""
     err_console = Console(stderr=True)
+
     try:
         # Check ffmpeg if transcode is enabled
         if transcode:
