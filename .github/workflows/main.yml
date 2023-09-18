@@ -27,7 +27,7 @@ jobs:
 
     - run: pip install -r requirements.txt pyinstaller Pillow
     - run: pyinstaller main.py --onefile --collect-data=grapheme --name=ncp-${{ matrix.name }} --icon=ncp.ico
-    - run: ./dist/ncp-${{ matrix.name }} -v
+    - run: ./dist/ncp-${{ matrix.name }} --help
     - uses: softprops/action-gh-release@v1
       with:
         files: dist/*
