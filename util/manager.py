@@ -10,9 +10,9 @@ from alive_progress import alive_bar
 
 
 class M3U8Manager:
-    def __init__(self, output: str, _continue: bool = None):
+    def __init__(self, output: str, resume: bool = None):
         self.output = pathlib.Path(output)
-        self._continue = _continue
+        self.resume = resume
         self.temp = self.output.parent.joinpath(f'temp_{self.output.stem}')
         self.segment_db_path = self.output.parent.joinpath(f'temp_{self.output.stem}/{self.output.stem}.json')
 
@@ -24,9 +24,9 @@ class M3U8Manager:
             self.temp.mkdir()
 
     def init_manager(self, segment_list: model.SegmentList) -> float:
-        if self._continue is None and self.segment_db_path.exists():
-            self._continue = confirm('Found existing task, do you want to continue?', default=True)
-        if self.segment_db_path.exists() and self._continue:
+        if self.resume is None and self.segment_db_path.exists():
+            self.resume = confirm('Found existing task, do you want to continue?', default=True)
+        if self.segment_db_path.exists() and self.resume:
             db = TinyDB(self.segment_db_path)
         else:
             if self.temp.exists():
@@ -66,10 +66,10 @@ class M3U8Manager:
 
 
 class ChannelManager:
-    def __init__(self, output: str, wait: float = 1, _continue: bool = None):
+    def __init__(self, output: str, wait: float = 1, resume: bool = None):
         self.output = pathlib.Path(output)
         self.wait = wait
-        self._continue = _continue
+        self.resume = resume
         self.temp = self.output.parent.joinpath('temp')
         self.channel_db_path = self.temp.joinpath(f'{self.output.stem}.json')
 
@@ -84,13 +84,13 @@ class ChannelManager:
 
     def init_manager(self, video_list: list) -> Tuple[int, int]:
         nico = NicoChannelPlus()
-        if self._continue is None and self.channel_db_path.exists():
-            self._continue = confirm('Found existing task, do you want to continue?', default=True)
+        if self.resume is None and self.channel_db_path.exists():
+            self.resume = confirm('Found existing task, do you want to continue?', default=True)
             self.continue_exists_video = confirm('Continue existing videos task?', default=True)
         else:
-            self.continue_exists_video = True if self._continue else False
+            self.continue_exists_video = True if self.resume else False
 
-        if self.channel_db_path.exists() and self._continue:
+        if self.channel_db_path.exists() and self.resume:
             db = TinyDB(self.channel_db_path)
             count_new = 0
             with alive_bar(len(video_list), force_tty=True) as bar:

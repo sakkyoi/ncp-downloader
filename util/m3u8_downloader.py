@@ -12,44 +12,54 @@ from util.manager import M3U8Manager
 
 
 class M3U8Downloader:
-    def __init__(self, session_id: SessionID, output: str, targer_resolution: tuple = None, wait: float = 1,
-                 _continue: bool = None, transcode: bool = None,
-                 ffmpeg: str = 'ffmpeg', acodec: str = 'copy', vcodec: str = 'copy', ffmpeg_options: list = None,
-                 tip: str = None) -> None:
+    def __init__(self, session_id: SessionID, output: str, targer_resolution: tuple = None,
+                 resume: bool = None, transcode: bool = None,
+                 ffmpeg: str = 'ffmpeg', vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None,
+                 tip: str = None, wait: float = 1) -> None:
         """
         Download video from m3u8 url
 
         Args:
             session_id (SessionID): session id of video
-            output (str): output file name
+            output (str): output file name without extension
             targer_resolution (tuple, optional): target resolution of video. Defaults to None.
+            resume (bool, optional): resume download. Defaults to None.
+            transcode (bool, optional): transcode video. Defaults to None.
+            ffmpeg (str, optional): ffmpeg path. Defaults to 'ffmpeg'.
+            vcodec (str, optional): video codec. Defaults to 'copy'.
+            acodec (str, optional): audio codec. Defaults to 'copy'.
+            ffmpeg_options (list, optional): ffmpeg options. Defaults to None.
+            tip (str, optional): tip for alive_bar. Defaults to None.
             wait (float, optional): wait time between each request(exclude download). Defaults to 1.
         """
         self.nico = NicoChannelPlus()
+
         self.session_id = session_id
         self.output = output
         self.target_resolution = targer_resolution
-        self.wait = wait
-        self._continue = _continue
+        self.resume = resume
         self.transcode = transcode
         self.ffmpeg = ffmpeg
-        self.acodec = acodec
         self.vcodec = vcodec
+        self.acodec = acodec
         self.ffmpeg_options = ffmpeg_options
         self.tip = tip
+        self.wait = wait
 
-        self.M3U8Manager = M3U8Manager(f'{self.output}.ts', _continue=self._continue)
+        self.M3U8Manager = M3U8Manager(f'{self.output}.ts', resume=self.resume)
 
         self.video_index = None
         self.target_video = None
         self.key = None
 
+        # Create alive_bar
         self.alive_bar = alive_bar(force_tty=True, manual=True)
         self.bar = self.alive_bar.__enter__()
         self.bar.title(f'Start downloading {self.tip if self.tip is not None else ""}')
 
         self.done = False
 
+        # workflow
         self.__get_video_index()
         self.__get_target_video()
         self.__get_key()
@@ -87,7 +97,7 @@ class M3U8Downloader:
 
     def __init_manager(self) -> None:
         """Initialize M3U8Manager"""
-        if self._continue is None:
+        if self.resume is None:
             with self.bar.pause():
                 percentage = self.M3U8Manager.init_manager(self.target_video.segments)
         else:
@@ -127,15 +137,13 @@ class M3U8Downloader:
             _output = f'{_input.parent.joinpath(_input.stem)}.mp4'
 
             ffmpeg = FFMPEG(self.ffmpeg).run(str(_input), _output, self.vcodec, self.acodec, self.ffmpeg_options)
-            while True:
-                n = next(ffmpeg)
 
-                if n == 999:
-                    self.bar(1)
-                    _input.unlink()  # remove original file
-                    break
-                else:
+            while n := next(ffmpeg):
+                if n is not None:
                     self.bar(n)
+                else:
+                    _input.unlink()  # remove original file
+                    self.bar(1)
 
         self.bar.title(f'Removing temp files {self.tip if self.tip is not None else ""}')
         self.M3U8Manager.remove_temp()

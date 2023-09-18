@@ -30,6 +30,9 @@ class FFMPEG:
 
     def run(self, _input: str, _output: str, vcodec: str, acodec: str, options: list) -> Iterator[float]:
         """Run ffmpeg command and yield progress"""
+        if options is None:
+            options = []
+
         self.cmd = [self.ffmpeg,
                     '-progress', '-', '-nostats', '-y',
                     '-i', _input,
@@ -40,8 +43,7 @@ class FFMPEG:
             self.cmd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            close_fds=False
+            stderr=subprocess.STDOUT
         )
 
         while self.process.poll() is None:
@@ -70,7 +72,7 @@ class FFMPEG:
         if self.process.poll() != 0:
             raise RuntimeError(f'Error while transcoding: {self.last_line}')
         else:
-            yield 999
+            yield None
 
 
 if __name__ == '__main__':
