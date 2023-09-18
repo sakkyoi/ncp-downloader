@@ -1,4 +1,3 @@
-import os
 import subprocess
 from typing import Iterator
 import re

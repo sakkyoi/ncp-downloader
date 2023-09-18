@@ -8,7 +8,8 @@ from util.manager import ChannelManager
 class ChannelDownloader:
     def __init__(self, channel_id: ChannelID, video_list: list, output: str, target_resolution: tuple = None,
                  resume: bool = None, transcode: bool = None, ffmpeg: str = 'ffmpeg',
-                 vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None, wait: float = 1) -> None:
+                 vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None,
+                 thread: int = 1, wait: float = 1) -> None:
         """
         Download videos from channel
 
@@ -37,6 +38,7 @@ class ChannelDownloader:
         self.vcodec = vcodec
         self.acodec = acodec
         self.ffmpeg_options = ffmpeg_options
+        self.thread = thread
         self.wait = wait
 
         self.ChannelManager = ChannelManager(self.output, wait=self.wait, resume=self.resume)
@@ -65,7 +67,8 @@ class ChannelDownloader:
 
             m3u8_downloader = M3U8Downloader(session_id, output, self.target_resolution,
                                              self.ChannelManager.continue_exists_video, self.transcode,
-                                             self.ffmpeg, self.vcodec, self.acodec, self.ffmpeg_options, tip)
+                                             self.ffmpeg, self.vcodec, self.acodec, self.ffmpeg_options,
+                                             self.thread, tip)
             if m3u8_downloader.done:
                 self.ChannelManager.set_status(str(video), True)
                 self.done += 1

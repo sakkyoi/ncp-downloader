@@ -13,7 +13,6 @@ from api.api import NicoChannelPlus, ContentCode
 from util.ffmpeg import FFMPEG
 from util.m3u8_downloader import M3U8Downloader
 from util.channel_downloader import ChannelDownloader
-from util.manager import ChannelManager
 
 
 class Resolution(click.ParamType):
@@ -126,6 +125,14 @@ def main(
                 click_type=FFMPEGOptions(),
             ),
         ] = None,
+        thread: Annotated[
+            int,
+            typer.Option(
+                '--thread',
+                show_default=True,
+                help='Number of threads.',
+            ),
+        ] = 1,
         debug: Annotated[
             bool,
             typer.Option(
@@ -148,6 +155,11 @@ def main(
         if yes:
             private = resume = yes
 
+        # tell user multithreading is dengerous
+        if (thread > 1 and
+                not confirm('Download with multithreading may got you banned from Server. Continue?', default=False)):
+            raise RuntimeError('Aborted.')
+
         nico = NicoChannelPlus()
 
         # Check if query is channel or video
@@ -163,7 +175,8 @@ def main(
 
             output = str(Path(output).joinpath(output_name))
 
-            M3U8Downloader(session_id, output, resolution, resume, transcode, ffmpeg, vcodec, acodec, ffmpeg_options)
+            M3U8Downloader(session_id, output, resolution, resume, transcode,
+                           ffmpeg, vcodec, acodec, ffmpeg_options, thread)
         else:
             if not yes:
                 if not confirm('Sure to download whole channel?', default=True):
@@ -186,7 +199,7 @@ def main(
             output = str(Path(output).joinpath(channel_name))
 
             ChannelDownloader(channel_id, video_list, output, resolution, resume,
-                              transcode, ffmpeg, vcodec, acodec, ffmpeg_options)
+                              transcode, ffmpeg, vcodec, acodec, ffmpeg_options, thread)
     except Exception as e:
         # Raise exception again if debug is enabled
         if debug:

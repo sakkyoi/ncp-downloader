@@ -5,6 +5,7 @@ from alive_progress import alive_bar
 import time
 from click import confirm
 from pathlib import Path
+import threading
 
 from api.api import NicoChannelPlus, SessionID
 from util.ffmpeg import FFMPEG
@@ -15,7 +16,7 @@ class M3U8Downloader:
     def __init__(self, session_id: SessionID, output: str, targer_resolution: tuple = None,
                  resume: bool = None, transcode: bool = None,
                  ffmpeg: str = 'ffmpeg', vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None,
-                 tip: str = None, wait: float = 1) -> None:
+                 thread: int = 1, tip: str = None, wait: float = 1) -> None:
         """
         Download video from m3u8 url
 
@@ -29,6 +30,7 @@ class M3U8Downloader:
             vcodec (str, optional): video codec. Defaults to 'copy'.
             acodec (str, optional): audio codec. Defaults to 'copy'.
             ffmpeg_options (list, optional): ffmpeg options. Defaults to None.
+            thread (int, optional): number of threads. Defaults to 1.
             tip (str, optional): tip for alive_bar. Defaults to None.
             wait (float, optional): wait time between each request(exclude download). Defaults to 1.
         """
@@ -43,6 +45,7 @@ class M3U8Downloader:
         self.vcodec = vcodec
         self.acodec = acodec
         self.ffmpeg_options = ffmpeg_options
+        self.thread = thread
         self.tip = tip
         self.wait = wait
 
@@ -64,7 +67,7 @@ class M3U8Downloader:
         self.__get_target_video()
         self.__get_key()
         self.__init_manager()
-        self.__download()
+        self.__download_threading()
         self.__concat_temp()
 
     def __get_video_index(self) -> None:
@@ -103,6 +106,36 @@ class M3U8Downloader:
         else:
             percentage = self.M3U8Manager.init_manager(self.target_video.segments)
         self.bar(percentage)
+
+    def __download_threading(self) -> None:
+        """Download video segments with threading"""
+        threads = []
+        self.thread_results = [False] * self.thread
+        for segment in self.target_video.segments:
+            if self.M3U8Manager.get_status(self.target_video.segments.index(segment)):
+                continue
+            threads.append(threading.Thread(target=self.__download_thread, args=(segment,), daemon=True,
+                                            name=f'{self.target_video.segments.index(segment)}'))
+            threads[-1].start()
+            if len(threads) >= self.thread:
+                for thread in threads:
+                    thread.join()
+
+                if not all(self.thread_results):
+                    raise ConnectionRefusedError('Connection refused by server')
+                for thread in threads:
+                    self.M3U8Manager.set_status(int(thread.name), True)
+
+                self.bar((int(threads[-1].name) + 1) / len(self.target_video.segments))
+                threads = []
+
+    def __download_thread(self, segment: m3u8.Segment) -> None:
+        """Download video segment"""
+        r = requests.get(segment.absolute_uri, headers=self.nico.headers)
+        if r.status_code == 200:
+            with open(f'{self.M3U8Manager.temp}/{self.target_video.segments.index(segment)}.ts', 'ab') as f:
+                f.write(self.key.decrypt(r.content))
+                self.thread_results[self.target_video.segments.index(segment) % self.thread] = True
 
     def __download(self) -> None:
         """Download video"""
