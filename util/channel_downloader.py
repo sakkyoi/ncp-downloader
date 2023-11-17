@@ -1,4 +1,5 @@
 from pathlib import Path
+from warnings import warn
 
 from api.api import NicoChannelPlus, ChannelID
 from util.m3u8_downloader import M3U8Downloader
@@ -60,6 +61,11 @@ class ChannelDownloader:
                 continue
 
             session_id = self.nico.get_session_id(video)
+
+            if session_id is None:
+                warn(f'Video {video} not found or permission denied. Skip.', stacklevel=2)
+                continue
+
             output_name, _ = self.nico.get_video_name(video, self.ChannelManager.get_title(str(video)))
             output = str(Path(self.output).joinpath(f'{output_name}'))
 

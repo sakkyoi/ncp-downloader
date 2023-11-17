@@ -46,7 +46,7 @@ def main(
         query: Annotated[
             str,
             typer.Argument(
-                help='URL or channel name to be queried.',
+                help='ID (Video), Name (Channel) or URL(Both) to be queried.',
             )
         ],
         output: Annotated[
@@ -169,7 +169,7 @@ def main(
 
             # Check if video exists
             if session_id is None:
-                raise ValueError('Video not found')
+                raise ValueError('Video not found or permission denied.')
 
             output_name, _ = nico.get_video_name(ContentCode(query))
 
@@ -187,7 +187,7 @@ def main(
 
             # Get channel infomation
             channel_id = nico.get_channel_id(query)
-            channel_name = nico.get_channel_info(channel_id)["fanclub_site_name"]
+            channel_name = nico.get_channel_info(channel_id)['fanclub_site_name']
 
             # Get video list
             if private:
