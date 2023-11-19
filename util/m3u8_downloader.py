@@ -109,6 +109,7 @@ class M3U8Downloader:
 
     def __download_threading(self) -> None:
         """Download video segments with threading"""
+        self.bar.title(f'Downloading video {self.tip if self.tip is not None else ""}')
         threads = []
         self.thread_results = [False] * self.thread
         for segment in self.target_video.segments:
@@ -175,8 +176,9 @@ class M3U8Downloader:
                 if n is not None:
                     self.bar(n)
                 else:
-                    _input.unlink()  # remove original file
                     self.bar(1)
+
+            _input.unlink()  # remove original file
 
         self.bar.title(f'Removing temp files {self.tip if self.tip is not None else ""}')
         self.M3U8Manager.remove_temp()
