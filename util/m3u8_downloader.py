@@ -176,9 +176,8 @@ class M3U8Downloader:
                 if n is not None:
                     self.bar(n)
                 else:
+                    _input.unlink()  # remove original file
                     self.bar(1)
-
-            _input.unlink()  # remove original file
 
         self.bar.title(f'Removing temp files {self.tip if self.tip is not None else ""}')
         self.M3U8Manager.remove_temp()
