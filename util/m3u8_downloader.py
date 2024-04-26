@@ -172,14 +172,12 @@ class M3U8Downloader:
 
             ffmpeg = FFMPEG(self.ffmpeg).run(str(_input), _output, self.vcodec, self.acodec, self.ffmpeg_options)
 
-            while True:
-                n = next(ffmpeg)
+            while n := next(ffmpeg):
                 if n is not None:
                     self.bar(n)
                 else:
                     _input.unlink()  # remove original file
                     self.bar(1)
-                    break
 
         self.bar.title(f'Removing temp files {self.tip if self.tip is not None else ""}')
         self.M3U8Manager.remove_temp()
