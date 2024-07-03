@@ -22,9 +22,6 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - run: |
-        calculatedSha=$(git rev-parse --short ${{ github.sha }})
-        echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v4
       with:
@@ -36,5 +33,5 @@ jobs:
     - uses: softprops/action-gh-release@v1
       with:
         files: dist/*
-        tag_name: ncp ${{ env.COMMIT_SHORT_SHA  }}
+        tag_name: ncp ${{ github.sha  }}
         token: ${{ secrets.GITHUB_TOKEN }}
