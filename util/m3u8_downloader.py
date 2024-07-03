@@ -63,19 +63,23 @@ class M3U8Downloader:
         self.done = False
 
         # workflow
-        self.__get_video_index()
-        self.__get_target_video()
-        self.__get_key()
-        self.__init_manager()
-        self.__download_threading()
-        self.__concat_temp()
+        if self.__get_video_index():  # check if video is available and get video index
+            self.__get_target_video()
+            self.__get_key()
+            self.__init_manager()
+            self.__download_threading()
+            self.__concat_temp()
 
-    def __get_video_index(self) -> None:
+    def __get_video_index(self) -> bool:
         """Get video index from session id"""
         self.bar.title(f'Getting video index {self.tip if self.tip is not None else ""}')
         r = requests.get(self.nico.api_video_index % self.session_id)
+        if 'Error' in r.text:
+            return False
         self.video_index = m3u8.loads(r.text)
         time.sleep(self.wait)  # don't spam the server
+
+        return True  # this is for checking if the video is available now
 
     def __get_target_video(self) -> None:
         """Get target video from video index"""
