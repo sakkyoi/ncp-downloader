@@ -2,6 +2,8 @@ name: Build
 
 on:
   push:
+    branches:
+      - master
 
 jobs:
   build:
@@ -31,5 +33,5 @@ jobs:
     - uses: softprops/action-gh-release@v1
       with:
         files: dist/*
-        tag_name: ${{ github.run_number }}
+        tag_name: ncp ${{ env.sha_short }}
         token: ${{ secrets.GITHUB_TOKEN }}
