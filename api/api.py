@@ -81,13 +81,13 @@ class NicoChannelPlus:
     def list_channels(self) -> list:
         """Get channel list"""
         r = requests.get(self.api_channels, headers=self.headers)
-        print(r)
         return r.json()['data']['content_providers']
 
     def list_views_comments(self, channel_id: ChannelID) -> list:
         """Get count of views and comments of channel from channel id \n
-        This api returns all the videos, *EVEN IF THE VIDEO IS PRIVATE* \n
-        TODO: This api can set specific video, like ?content_codes[]=xxxxxx&content_codes[]=xxxxxx&..."""
+        This api using different method to get video list \n
+        This api can set specific video, like ?content_codes[]=xxxxxx&content_codes[]=xxxxxx&..., \
+        but it's not implemented here"""
         r = requests.get(self.api_views_comments % channel_id, headers=self.headers)
         return r.json()['data']['video_aggregate_infos']
 
@@ -109,7 +109,7 @@ class NicoChannelPlus:
         return video_list
 
     def list_videos_x(self, channel_id: ChannelID) -> list:
-        """Get video list of channel from channel id by views and comments count list (should include private video)"""
+        """Get video list of channel from channel id by views and comments count list"""
         views_comments = self.list_views_comments(channel_id)
         return [ContentCode(video['content_code']) for video in views_comments]
 
@@ -139,14 +139,14 @@ class NicoChannelPlus:
         if r.status_code == 200:
             return r.json()['data']['video_page']
         else:
-            return None  # if video is private, it will be error. (video still can be downloaded)
+            return None  # if video is private, it will be error.
 
     def get_video_name(self, content_code: ContentCode, known_title: str = None,
                        _format: str = '%release_date% %title% [%content_code%]') -> Tuple[str, str]:
         """Get video name from content code"""
         video_page = self.get_video_page(content_code)
         title = video_page['title'] if video_page is not None \
-            else 'private' if known_title is None else known_title
+            else 'unknown' if known_title is None else known_title
         title = sanitize_filename(title, '_')  # sanitize filename
 
         if video_page is not None:
@@ -159,7 +159,7 @@ class NicoChannelPlus:
             release_at = datetime.strptime(public_status['released_at'], '%Y-%m-%d %H:%M:%S')
             return _format.replace('%release_date%', release_at.strftime('%Y-%m-%d')) \
                 .replace('%title%', title) \
-                .replace('%content_code%', str(content_code)), 'private'  # TODO: fix private video title
+                .replace('%content_code%', str(content_code)), 'unknown'
 
 
 if __name__ == '__main__':

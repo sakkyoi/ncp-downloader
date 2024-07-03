@@ -71,12 +71,12 @@ def main(
                 help='Resume download.',
             ),
         ] = None,
-        private: Annotated[
+        experimental: Annotated[
             Optional[bool],
             typer.Option(
-                '--private/--normal', '-p/-np',
+                '--experimental/--normal', '-p/-np',
                 show_default=False,
-                help='Download private videos.',
+                help='Experimental download method',
             ),
         ] = None,
         yes: Annotated[
@@ -153,7 +153,7 @@ def main(
 
         # If yes is enabled, skip all confirmation
         if yes:
-            private = resume = yes
+            experimental = resume = yes
 
         # tell user multithreading is dengerous
         if (thread > 1 and
@@ -182,15 +182,15 @@ def main(
                 if not confirm('Sure to download whole channel?', default=True):
                     raise RuntimeError('Aborted.')
 
-            if private is None:
-                private = confirm('Download private videos?', default=True)
+            if experimental is None:
+                experimental = confirm('Using experimental download method?', default=True)
 
             # Get channel infomation
             channel_id = nico.get_channel_id(query)
             channel_name = nico.get_channel_info(channel_id)['fanclub_site_name']
 
             # Get video list
-            if private:
+            if experimental:
                 video_list = nico.list_videos_x(channel_id)
             else:
                 video_list = nico.list_videos(channel_id)
