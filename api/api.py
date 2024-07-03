@@ -44,7 +44,7 @@ class NicoChannelPlus:
             }
         self.headers = headers
 
-        self.api_base = 'https://nfc-api.nicochannel.jp/fc'
+        self.api_base = 'https://api.nicochannel.jp/fc'
         self.api_channels = f'{self.api_base}/content_providers/channels'
         self.api_channel_info = f'{self.api_base}/fanclub_sites/%s/page_base_info'  # channel_id
         self.api_video_page = f'{self.api_base}/video_pages/%s'  # content_code
@@ -81,6 +81,7 @@ class NicoChannelPlus:
     def list_channels(self) -> list:
         """Get channel list"""
         r = requests.get(self.api_channels, headers=self.headers)
+        print(r)
         return r.json()['data']['content_providers']
 
     def list_views_comments(self, channel_id: ChannelID) -> list:
