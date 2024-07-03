@@ -28,13 +28,13 @@ jobs:
         python-version: 3.8
 
     - run: pip install -r requirements.txt pyinstaller Pillow
-    - run: pyinstaller main.py --onefile --collect-data=grapheme --name=ncp-${{ matrix.name }} --icon=ncp.ico
+    - run: pyinstaller main.py --onefile --collect-data=grapheme --name=ncp-${{ matrix.name }}
     - run: ./dist/ncp-${{ matrix.name }} --help
     - id: vars
       run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
     - uses: softprops/action-gh-release@v1
       with:
         files: dist/*
+        name: Release ${{ steps.vars.outputs.sha_short }}
         tag_name: ${{ steps.vars.outputs.sha_short }}
-        release_name: Release ${{ steps.vars.outputs.sha_short }}
         token: ${{ secrets.GITHUB_TOKEN }}
