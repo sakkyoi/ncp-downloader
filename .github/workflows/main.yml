@@ -32,9 +32,12 @@ jobs:
     - run: ./dist/ncp-${{ matrix.name }} --help
     - id: vars
       run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-    - uses: softprops/action-gh-release@v2
-      with:
-        files: dist/*
-        tag_name: ${{ steps.vars.outputs.sha_short }}
-        name: Release ${{ steps.vars.outputs.sha_short }}
-        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create \
+          --target ${{ steps.vars.outputs.sha_short }} \
+          --title "Release ${{ steps.vars.outputs.sha_short }}" \
+          ${{ steps.vars.outputs.sha_short }} \
+          dist/*
