@@ -33,5 +33,5 @@ jobs:
     - uses: softprops/action-gh-release@v1
       with:
         files: dist/*
-        tag_name: ncp ${{ env.sha_short }}
+        tag_name: ncp ${{ env.COMMIT_SHORT_SHA  }}
         token: ${{ secrets.GITHUB_TOKEN }}
