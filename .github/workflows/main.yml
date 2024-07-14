@@ -35,5 +35,6 @@ jobs:
       with:
         files: dist/*
         tag_name: ${{ steps.vars.outputs.sha_short }}
+        tag: ${{ steps.vars.outputs.sha_short }}
         name: Release ${{ steps.vars.outputs.sha_short }}
         token: ${{ secrets.GITHUB_TOKEN }}
