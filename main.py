@@ -74,7 +74,7 @@ def main(
         experimental: Annotated[
             Optional[bool],
             typer.Option(
-                '--experimental/--normal', '-p/-np',
+                '--experimental/--normal', '-e/-ne',
                 show_default=False,
                 help='Experimental download method',
             ),
