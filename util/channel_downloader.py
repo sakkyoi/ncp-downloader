@@ -7,8 +7,8 @@ from util.manager import ChannelManager
 
 
 class ChannelDownloader:
-    def __init__(self, channel_id: ChannelID, video_list: list, output: str, target_resolution: tuple = None,
-                 resume: bool = None, transcode: bool = None, ffmpeg: str = 'ffmpeg',
+    def __init__(self, nico: NicoChannelPlus, channel_id: ChannelID, video_list: list, output: str,
+                 target_resolution: tuple = None, resume: bool = None, transcode: bool = None, ffmpeg: str = 'ffmpeg',
                  vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None,
                  thread: int = 1, wait: float = 1) -> None:
         """
@@ -27,7 +27,7 @@ class ChannelDownloader:
             ffmpeg_options (list, optional): ffmpeg options. Defaults to None.
             wait (float, optional): wait time between each request(exclude download). Defaults to 1.
         """
-        self.nico = NicoChannelPlus()
+        self.nico = nico
 
         self.channel_id = channel_id
         self.video_list = video_list
@@ -71,7 +71,7 @@ class ChannelDownloader:
 
             tip = f'({self.done+1}/{self.total})'
 
-            m3u8_downloader = M3U8Downloader(session_id, output, self.target_resolution,
+            m3u8_downloader = M3U8Downloader(self.nico, session_id, output, self.target_resolution,
                                              self.ChannelManager.continue_exists_video, self.transcode,
                                              self.ffmpeg, self.vcodec, self.acodec, self.ffmpeg_options,
                                              self.thread, tip)

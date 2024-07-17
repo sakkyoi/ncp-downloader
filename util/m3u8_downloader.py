@@ -13,7 +13,7 @@ from util.manager import M3U8Manager
 
 
 class M3U8Downloader:
-    def __init__(self, session_id: SessionID, output: str, targer_resolution: tuple = None,
+    def __init__(self, nico: NicoChannelPlus, session_id: SessionID, output: str, targer_resolution: tuple = None,
                  resume: bool = None, transcode: bool = None,
                  ffmpeg: str = 'ffmpeg', vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None,
                  thread: int = 1, tip: str = None, wait: float = 1) -> None:
@@ -34,7 +34,7 @@ class M3U8Downloader:
             tip (str, optional): tip for alive_bar. Defaults to None.
             wait (float, optional): wait time between each request(exclude download). Defaults to 1.
         """
-        self.nico = NicoChannelPlus()
+        self.nico = nico
 
         self.session_id = session_id
         self.output = output

@@ -6,6 +6,8 @@ from urllib.parse import urlparse, urljoin
 from datetime import datetime
 from pathvalidate import sanitize_filename
 
+from .auth import NicoChannelAuth
+
 
 class SessionID(object):
     """Session id of video"""
@@ -36,15 +38,32 @@ class ContentCode(object):
 
 class NicoChannelPlus:
     """Nico Channel Plus API"""
-    def __init__(self, headers=None) -> None:
-        if headers is None:
-            headers = {
-                'Origin': 'https://nicochannel.jp',
-                'Fc_use_device': 'null'
-            }
-        self.headers = headers
+    def __init__(self, site_base: str, username: Optional[str], password: Optional[str]) -> None:
+        self.site_base = f'https://{site_base}'
+        self.headers = {
+            'Origin': self.site_base,
+            'Fc_use_device': 'null'
+        }
 
-        self.api_base = 'https://api.nicochannel.jp/fc'
+        # this api is used to get api_base_url, fanclub_site_id, platform_id
+        self.api_settings = f'{self.site_base}/site/settings.json'
+        self.api_base, self.fanclub_site_id, self.platform_id = self.__initial_api()
+
+        # api_login: %s = fanclub_site_id
+        # this api is used to get data.fanclub_site.auth0_web_client_id(client_id) &
+        #                         data.fanclub_site.fanclub_group.auth0_domain(auth0_domain)
+        self.api_login = f'{self.api_base}/fanclub_sites/%s/login'
+        self.auth_base, self.auth_client_id = self.__initial_auth()
+
+        # initial auth
+        if username is not None and password is not None:
+            self.auth = NicoChannelAuth(username, password, site_base,
+                                        self.platform_id, self.auth_client_id, self.auth_base,
+                                        urlparse(self.api_base).netloc)
+        else:
+            self.auth = None
+
+        # endpoints
         self.api_channels = f'{self.api_base}/content_providers/channels'
         self.api_channel_info = f'{self.api_base}/fanclub_sites/%s/page_base_info'  # channel_id
         self.api_video_page = f'{self.api_base}/video_pages/%s'  # content_code
@@ -52,8 +71,22 @@ class NicoChannelPlus:
         self.api_session_id = f'{self.api_base}/video_pages/%s/session_ids'  # content_code
         self.api_video_list = f'{self.api_base}/fanclub_sites/%s/video_pages?vod_type=%d&page=%d&per_page=%d&sort=%s'
         self.api_views_comments = f'{self.api_base}/fanclub_sites/%s/views_comments'  # channel_id
-
         self.api_video_index = 'https://hls-auth.cloud.stream.co.jp/auth/index.m3u8?session_id=%s'
+
+    def __initial_api(self) -> Tuple[str, str, str]:
+        """Initial api base from settings"""
+        req = requests.get(self.api_settings, headers=self.headers)
+        resp = req.json()
+
+        return resp['api_base_url'], resp['fanclub_site_id'], resp['platform_id']
+
+    def __initial_auth(self) -> Tuple[str, str]:
+        """Initial auth base from login api"""
+        req = requests.get(self.api_login % self.fanclub_site_id, headers=self.headers)
+        resp = req.json()
+
+        return (resp['data']['fanclub_site']['fanclub_group']['auth0_domain'],
+                resp['data']['fanclub_site']['auth0_web_client_id'])
 
     def get_channel_id(self, query: str) -> Optional[ChannelID]:
         """Get channel id from channel domain or name"""
@@ -121,7 +154,9 @@ class NicoChannelPlus:
     def get_session_id(self, content_code: ContentCode) -> Optional[SessionID]:
         """Get session id of video from content code"""
         r = requests.post(self.api_session_id % content_code,
-                          headers=dict({'Content-Type': 'application/json'}, **self.headers),
+                          headers=dict({'Content-Type': 'application/json'},
+                                       **({'Authorization': f'Bearer {self.auth}'} if self.auth is not None else {}),
+                                       **self.headers),
                           data=json.dumps({}))
         if r.status_code == 200:
             return SessionID(r.json()['data']['session_id'])

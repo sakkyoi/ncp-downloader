@@ -133,6 +133,20 @@ def main(
                 help='Number of threads.',
             ),
         ] = 1,
+        username: Annotated[
+            str,
+            typer.Option(
+                '--username',
+                help='Username for login.',
+            ),
+        ] = None,
+        password: Annotated[
+            str,
+            typer.Option(
+                '--password',
+                help='Password for login.',
+            ),
+        ] = None,
         debug: Annotated[
             bool,
             typer.Option(
@@ -144,6 +158,10 @@ def main(
 ) -> None:
     """Nico Channel Plus Downloader"""
     err_console = Console(stderr=True)
+
+    # nico
+    site_base = urlparse(query).netloc if urlparse(query).netloc != '' else 'nicochannel.jp'
+    nico = NicoChannelPlus(site_base, username, password)
 
     try:
         # Check ffmpeg if transcode is enabled
@@ -160,8 +178,6 @@ def main(
                 not confirm('Download with multithreading may got you banned from Server. Continue?', default=False)):
             raise RuntimeError('Aborted.')
 
-        nico = NicoChannelPlus()
-
         # Check if query is channel or video
         if nico.get_channel_id(query) is None:
             query = urlparse(query).path.strip('/').split('/')[-1]
@@ -175,7 +191,7 @@ def main(
 
             output = str(Path(output).joinpath(output_name))
 
-            M3U8Downloader(session_id, output, resolution, resume, transcode,
+            M3U8Downloader(nico, session_id, output, resolution, resume, transcode,
                            ffmpeg, vcodec, acodec, ffmpeg_options, thread)
         else:
             if not yes:
@@ -198,7 +214,7 @@ def main(
 
             output = str(Path(output).joinpath(channel_name))
 
-            ChannelDownloader(channel_id, video_list, output, resolution, resume,
+            ChannelDownloader(nico, channel_id, video_list, output, resolution, resume,
                               transcode, ffmpeg, vcodec, acodec, ffmpeg_options, thread)
     except Exception as e:
         # Raise exception again if debug is enabled
