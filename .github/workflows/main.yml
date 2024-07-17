@@ -36,6 +36,7 @@ jobs:
         else
           echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         fi
+      shell: bash
     - uses: softprops/action-gh-release@v1
       with:
         files: dist/*
