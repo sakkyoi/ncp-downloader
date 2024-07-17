@@ -29,9 +29,16 @@ jobs:
     - run: pip install -r requirements.txt pyinstaller Pillow
     - run: pyinstaller main.py --onefile --collect-data=grapheme --name=ncp-${{ matrix.name }}
     - run: ./dist/ncp-${{ matrix.name }} --help
-    - run: |
-        cd dist
-        gh release create $(git rev-parse --short HEAD) * --title "Release $(git rev-parse --short HEAD)" --latest
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      shell: bash
+    - id: vars
+      run: |
+        if [[ ${{ matrix.os }} == 'windows-latest' ]]; then
+          set sha_short=$(git rev-parse --short HEAD)
+        else
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        fi
+    - uses: softprops/action-gh-release@v1
+      with:
+        files: dist/*
+        name: Release ${{ steps.vars.outputs.sha_short }}
+        tag_name: ${{ steps.vars.outputs.sha_short }}
+        token: ${{ secrets.GITHUB_TOKEN }}
