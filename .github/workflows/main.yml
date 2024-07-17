@@ -29,7 +29,9 @@ jobs:
     - run: pip install -r requirements.txt pyinstaller Pillow
     - run: pyinstaller main.py --onefile --collect-data=grapheme --name=ncp-${{ matrix.name }}
     - run: ./dist/ncp-${{ matrix.name }} --help
-    - run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+    - run: |
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $env:GITHUB_ENV
     - uses: softprops/action-gh-release@v1
       with:
         files: dist/*
