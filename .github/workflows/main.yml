@@ -31,8 +31,8 @@ jobs:
     - run: ./dist/ncp-${{ matrix.name }} --help
     - id: vars
       run: |
-        if [[ ${{ matrix.os }} == 'windows-latest' ]]; then
-          set sha_short=$(git rev-parse --short HEAD)
+        if [[ '${{ matrix.os }}' == 'windows-latest' ]]; then
+          echo "sha_short=$(git rev-parse --short HEAD)" | Out-File -FilePath $GITHUB_OUTPUT -Append
         else
           echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         fi
