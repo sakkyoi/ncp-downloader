@@ -51,6 +51,9 @@ class NicoChannelAuth:
 
     def __initial_openid(self) -> Tuple[str, str]:
         r = self.session.get(self.openid_configuration)
+        if r.status_code != 200:
+            raise Exception('Failed to get openid configuration')
+
         openid_configuration = r.json()
 
         return openid_configuration['authorization_endpoint'], openid_configuration['token_endpoint']
@@ -93,11 +96,16 @@ class NicoChannelAuth:
         - post token endpoint with code -> this will return access token and refresh token
         """
         r_login_page = self.session.get(self.__prepare_authorize_url())
+        if r_login_page.status_code != 200:
+            raise Exception('Failed to get login page')
+
         r_redirect = self.session.post(r_login_page.url, {
             'username': self.username,
             'password': self.password,
             'state': parse_qs(urlparse(r_login_page.url).query)['state'][0]
         }, headers=self.headers)
+        if r_redirect.status_code != 404 and 'code' not in parse_qs(urlparse(r_redirect.url).query):
+            raise Exception('Failed to login')
 
         r_token = self.session.post(self.token_endpoint, {
             'client_id': self.client_id,
@@ -106,6 +114,8 @@ class NicoChannelAuth:
             'code': parse_qs(urlparse(r_redirect.url).query)['code'][0],
             'redirect_uri': self.redirect_uri
         }, headers=self.headers)
+        if r_token.status_code != 200 or 'access_token' not in r_token.json() or 'refresh_token' not in r_token.json():
+            raise Exception('Failed to get access token')
 
         token = r_token.json()
         return token['access_token'], token['refresh_token']
@@ -123,6 +133,8 @@ class NicoChannelAuth:
             'grant_type': 'refresh_token',
             'refresh_token': self.refresh_token
         }, headers=self.headers)
+        if r_token.status_code != 200:
+            raise Exception('Failed to refresh access token')
 
         token = r_token.json()
 
