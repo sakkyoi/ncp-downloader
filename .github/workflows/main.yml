@@ -33,8 +33,7 @@ jobs:
       run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
     - run: |
         cd dist
-        zip -r ncp-${{ matrix.name }}-${{ steps.vars.outputs.sha_short }}.zip ncp-${{ matrix.name }}
-        gh release upload ${{ steps.vars.outputs.sha_short }} ncp-${{ matrix.name }}-${{ steps.vars.outputs.sha_short }}.zip
+        gh release create ${{ steps.vars.outputs.sha_short }} * --title "Release ${{ steps.vars.outputs.sha_short }}" --latest
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       shell: bash
