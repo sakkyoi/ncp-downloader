@@ -4,12 +4,12 @@ from typing import Tuple
 from m3u8 import model
 from tinydb import TinyDB, Query
 from click import confirm
-from api.api import NicoChannelPlus
+from api.api import NCP
 import time
 from alive_progress import alive_bar
 
 
-class M3U8Manager:
+class M3U8Manager(object):
     def __init__(self, output: str, resume: bool = None):
         self.output = pathlib.Path(output)
         self.resume = resume
@@ -65,8 +65,9 @@ class M3U8Manager:
         self.temp.rmdir() if remove_self else None
 
 
-class ChannelManager:
-    def __init__(self, output: str, wait: float = 1, resume: bool = None):
+class ChannelManager(object):
+    def __init__(self, nico: NCP, output: str, wait: float = 1, resume: bool = None):
+        self.nico = nico
         self.output = pathlib.Path(output)
         self.wait = wait
         self.resume = resume
@@ -83,7 +84,6 @@ class ChannelManager:
             self.temp.mkdir()
 
     def init_manager(self, video_list: list) -> Tuple[int, int]:
-        nico = NicoChannelPlus()
         if self.resume is None and self.channel_db_path.exists():
             self.resume = confirm('Found existing task, do you want to continue?', default=True)
             self.continue_exists_video = confirm('Continue existing videos task?', default=True)
@@ -97,7 +97,7 @@ class ChannelManager:
                 bar.title('Initializing')
                 for video in video_list:
                     if not db.contains(Query().id == str(video)):
-                        _, title = nico.get_video_name(video)
+                        _, title = self.nico.get_video_name(video)
                         db.insert({
                             'id': str(video),
                             'title': title,
@@ -117,7 +117,7 @@ class ChannelManager:
             with alive_bar(len(video_list), force_tty=True) as bar:
                 bar.title('Initializing')
                 for video in video_list:
-                    _, title = nico.get_video_name(video)
+                    _, title = self.nico.get_video_name(video)
                     db.insert({
                         'id': str(video),
                         'title': title,

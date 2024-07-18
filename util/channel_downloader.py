@@ -1,33 +1,34 @@
 from pathlib import Path
 from warnings import warn
 
-from api.api import NicoChannelPlus, ChannelID
+from api.api import NCP, ChannelID
 from util.m3u8_downloader import M3U8Downloader
 from util.manager import ChannelManager
 
 
-class ChannelDownloader:
-    def __init__(self, channel_id: ChannelID, video_list: list, output: str, target_resolution: tuple = None,
-                 resume: bool = None, transcode: bool = None, ffmpeg: str = 'ffmpeg',
+class ChannelDownloader(object):
+    """
+    Download videos from channel
+
+    Args:
+        nico (NCP): NCP object
+        channel_id (ChannelID): channel id
+        video_list (list): list of video id
+        output (str): output directory
+        target_resolution (tuple, optional): target resolution of video. Defaults to None.
+        resume (bool, optional): resume download. Defaults to None.
+        transcode (bool, optional): transcode video. Defaults to None.
+        ffmpeg (str, optional): ffmpeg path. Defaults to 'ffmpeg'.
+        vcodec (str, optional): video codec. Defaults to 'copy'.
+        acodec (str, optional): audio codec. Defaults to 'copy'.
+        ffmpeg_options (list, optional): ffmpeg options. Defaults to None.
+        wait (float, optional): wait time between each request(exclude download). Defaults to 1.
+    """
+    def __init__(self, nico: NCP, channel_id: ChannelID, video_list: list, output: str,
+                 target_resolution: tuple = None, resume: bool = None, transcode: bool = None, ffmpeg: str = 'ffmpeg',
                  vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None,
                  thread: int = 1, wait: float = 1) -> None:
-        """
-        Download videos from channel
-
-        Args:
-            channel_id (ChannelID): channel id
-            video_list (list): list of video id
-            output (str): output directory
-            target_resolution (tuple, optional): target resolution of video. Defaults to None.
-            resume (bool, optional): resume download. Defaults to None.
-            transcode (bool, optional): transcode video. Defaults to None.
-            ffmpeg (str, optional): ffmpeg path. Defaults to 'ffmpeg'.
-            vcodec (str, optional): video codec. Defaults to 'copy'.
-            acodec (str, optional): audio codec. Defaults to 'copy'.
-            ffmpeg_options (list, optional): ffmpeg options. Defaults to None.
-            wait (float, optional): wait time between each request(exclude download). Defaults to 1.
-        """
-        self.nico = NicoChannelPlus()
+        self.nico = nico
 
         self.channel_id = channel_id
         self.video_list = video_list
@@ -42,7 +43,7 @@ class ChannelDownloader:
         self.thread = thread
         self.wait = wait
 
-        self.ChannelManager = ChannelManager(self.output, wait=self.wait, resume=self.resume)
+        self.ChannelManager = ChannelManager(self.nico, self.output, wait=self.wait, resume=self.resume)
 
         # workflow
         self.__init_manager()
@@ -71,7 +72,7 @@ class ChannelDownloader:
 
             tip = f'({self.done+1}/{self.total})'
 
-            m3u8_downloader = M3U8Downloader(session_id, output, self.target_resolution,
+            m3u8_downloader = M3U8Downloader(self.nico, session_id, output, self.target_resolution,
                                              self.ChannelManager.continue_exists_video, self.transcode,
                                              self.ffmpeg, self.vcodec, self.acodec, self.ffmpeg_options,
                                              self.thread, tip)

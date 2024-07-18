@@ -7,34 +7,35 @@ from click import confirm
 from pathlib import Path
 import threading
 
-from api.api import NicoChannelPlus, SessionID
+from api.api import NCP, SessionID
 from util.ffmpeg import FFMPEG
 from util.manager import M3U8Manager
 
 
-class M3U8Downloader:
-    def __init__(self, session_id: SessionID, output: str, targer_resolution: tuple = None,
+class M3U8Downloader(object):
+    """
+    Download video from m3u8 url
+
+    Args:
+        nico (NCP): NCP object
+        session_id (SessionID): session id of video
+        output (str): output file name without extension
+        targer_resolution (tuple, optional): target resolution of video. Defaults to None.
+        resume (bool, optional): resume download. Defaults to None.
+        transcode (bool, optional): transcode video. Defaults to None.
+        ffmpeg (str, optional): ffmpeg path. Defaults to 'ffmpeg'.
+        vcodec (str, optional): video codec. Defaults to 'copy'.
+        acodec (str, optional): audio codec. Defaults to 'copy'.
+        ffmpeg_options (list, optional): ffmpeg options. Defaults to None.
+        thread (int, optional): number of threads. Defaults to 1.
+        tip (str, optional): tip for alive_bar. Defaults to None.
+        wait (float, optional): wait time between each request(exclude download). Defaults to 1.
+    """
+    def __init__(self, nico: NCP, session_id: SessionID, output: str, targer_resolution: tuple = None,
                  resume: bool = None, transcode: bool = None,
                  ffmpeg: str = 'ffmpeg', vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None,
                  thread: int = 1, tip: str = None, wait: float = 1) -> None:
-        """
-        Download video from m3u8 url
-
-        Args:
-            session_id (SessionID): session id of video
-            output (str): output file name without extension
-            targer_resolution (tuple, optional): target resolution of video. Defaults to None.
-            resume (bool, optional): resume download. Defaults to None.
-            transcode (bool, optional): transcode video. Defaults to None.
-            ffmpeg (str, optional): ffmpeg path. Defaults to 'ffmpeg'.
-            vcodec (str, optional): video codec. Defaults to 'copy'.
-            acodec (str, optional): audio codec. Defaults to 'copy'.
-            ffmpeg_options (list, optional): ffmpeg options. Defaults to None.
-            thread (int, optional): number of threads. Defaults to 1.
-            tip (str, optional): tip for alive_bar. Defaults to None.
-            wait (float, optional): wait time between each request(exclude download). Defaults to 1.
-        """
-        self.nico = NicoChannelPlus()
+        self.nico = nico
 
         self.session_id = session_id
         self.output = output
@@ -63,19 +64,23 @@ class M3U8Downloader:
         self.done = False
 
         # workflow
-        self.__get_video_index()
-        self.__get_target_video()
-        self.__get_key()
-        self.__init_manager()
-        self.__download_threading()
-        self.__concat_temp()
+        if self.__get_video_index():  # check if video is available and get video index
+            self.__get_target_video()
+            self.__get_key()
+            self.__init_manager()
+            self.__download_threading()
+            self.__concat_temp()
 
-    def __get_video_index(self) -> None:
+    def __get_video_index(self) -> bool:
         """Get video index from session id"""
         self.bar.title(f'Getting video index {self.tip if self.tip is not None else ""}')
         r = requests.get(self.nico.api_video_index % self.session_id)
+        if 'Error' in r.text:
+            return False
         self.video_index = m3u8.loads(r.text)
         time.sleep(self.wait)  # don't spam the server
+
+        return True  # this is for checking if the video is available now
 
     def __get_target_video(self) -> None:
         """Get target video from video index"""

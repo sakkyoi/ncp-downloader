@@ -3,7 +3,13 @@ from typing import Iterator
 import re
 
 
-class FFMPEG:
+class FFMPEG(object):
+    """
+    FFMPEG wrapper
+
+    Args:
+        ffmpeg (str, optional): ffmpeg path. Defaults to 'ffmpeg'.
+    """
     def __init__(self, ffmpeg: str = 'ffmpeg') -> None:
         self.ffmpeg = ffmpeg
         self.cmd = None
