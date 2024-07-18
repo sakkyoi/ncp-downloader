@@ -161,7 +161,7 @@ class NCPAuth(object):
             'grant_type': 'refresh_token',
             'refresh_token': self.refresh_token
         }, headers=self.headers)
-        if r_token.status_code != 200:
+        if r_token.status_code != 200 or 'access_token' not in r_token.json() or 'refresh_token' not in r_token.json():
             # failed to refresh access token, login again
             raise Exception('Failed to refresh access token')
 
@@ -185,7 +185,11 @@ class NCPAuth(object):
         # check if access token is expired
         jwt_payload = jwt.decode(self.access_token, options={"verify_signature": False})
         if jwt_payload['exp'] < int(time.time()):
-            self.access_token, self.refresh_token = self.__refresh()
+            try:
+                self.access_token, self.refresh_token = self.__refresh()
+            except Exception:
+                # if failed to refresh, login again
+                self.access_token, self.refresh_token = self.__login()
 
         # if access token is not expired, do nothing
 
