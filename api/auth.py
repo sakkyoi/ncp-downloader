@@ -185,12 +185,7 @@ class NCPAuth(object):
         # check if access token is expired
         jwt_payload = jwt.decode(self.access_token, options={"verify_signature": False})
         if jwt_payload['exp'] < int(time.time()):
-            # check if refresh token is expired
-            jwt_payload = jwt.decode(self.refresh_token, options={"verify_signature": False})
-            if jwt_payload['exp'] < int(time.time()):
-                self.access_token, self.refresh_token = self.__refresh()
-            else:
-                self.access_token, self.refresh_token = self.__login()
+            self.access_token, self.refresh_token = self.__refresh()
 
         # if access token is not expired, do nothing
 
