@@ -24,7 +24,11 @@ QUERY is a URL of video or channel.
 --help                                      Show help message.
 ```
 **If username and password are provided, a token will be generated and saved in the current directory. 
-DO NOT SHARE THE TOKEN WITH ANYONE.**
+DO NOT SHARE THE TOKEN WITH ANYONE.**<br>
+Sometime this tool may not work properly, you can delete temp files and folder to make it re-download the video.
+(feel free to modify the json file when you know what you are doing)
+
+## `This tool may cause account suspension or ban. Use it at your own risk.`
 
 # Disclaimer
 Please do use this tool responsibly and respect the rights of the content creators.<br>
