@@ -9,7 +9,7 @@ from rich.console import Console
 from urllib.parse import urlparse
 from pathlib import Path
 
-from api.api import NicoChannelPlus, ContentCode
+from api.api import NCP, ContentCode
 from util.ffmpeg import FFMPEG
 from util.m3u8_downloader import M3U8Downloader
 from util.channel_downloader import ChannelDownloader
@@ -156,12 +156,11 @@ def main(
             ),
         ] = False,
 ) -> None:
-    """Nico Channel Plus Downloader"""
+    """The NCP Downloader"""
     err_console = Console(stderr=True)
 
     # nico
-    site_base = urlparse(query).netloc if urlparse(query).netloc != '' else 'nicochannel.jp'
-    nico = NicoChannelPlus(site_base, username, password)
+    nico = NCP(urlparse(query).netloc, username, password)
 
     try:
         # Check ffmpeg if transcode is enabled

@@ -7,13 +7,13 @@ from click import confirm
 from pathlib import Path
 import threading
 
-from api.api import NicoChannelPlus, SessionID
+from api.api import NCP, SessionID
 from util.ffmpeg import FFMPEG
 from util.manager import M3U8Manager
 
 
-class M3U8Downloader:
-    def __init__(self, nico: NicoChannelPlus, session_id: SessionID, output: str, targer_resolution: tuple = None,
+class M3U8Downloader(object):
+    def __init__(self, nico: NCP, session_id: SessionID, output: str, targer_resolution: tuple = None,
                  resume: bool = None, transcode: bool = None,
                  ffmpeg: str = 'ffmpeg', vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None,
                  thread: int = 1, tip: str = None, wait: float = 1) -> None:

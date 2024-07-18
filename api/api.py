@@ -6,7 +6,7 @@ from urllib.parse import urlparse, urljoin
 from datetime import datetime
 from pathvalidate import sanitize_filename
 
-from .auth import NicoChannelAuth
+from .auth import NCPAuth
 
 
 class SessionID(object):
@@ -36,8 +36,8 @@ class ContentCode(object):
         return str(self.content_code)
 
 
-class NicoChannelPlus:
-    """Nico Channel Plus API"""
+class NCP(object):
+    """The NCP API"""
     def __init__(self, site_base: str, username: Optional[str], password: Optional[str]) -> None:
         self.site_base = f'https://{site_base}'
         self.headers = {
@@ -57,9 +57,9 @@ class NicoChannelPlus:
 
         # initial auth
         if username is not None and password is not None:
-            self.auth = NicoChannelAuth(username, password, site_base,
-                                        self.platform_id, self.auth_client_id, self.auth_base,
-                                        urlparse(self.api_base).netloc)
+            self.auth = NCPAuth(username, password, site_base,
+                                self.platform_id, self.auth_client_id, self.auth_base,
+                                urlparse(self.api_base).netloc)
         else:
             self.auth = None
 

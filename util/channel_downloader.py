@@ -1,13 +1,13 @@
 from pathlib import Path
 from warnings import warn
 
-from api.api import NicoChannelPlus, ChannelID
+from api.api import NCP, ChannelID
 from util.m3u8_downloader import M3U8Downloader
 from util.manager import ChannelManager
 
 
-class ChannelDownloader:
-    def __init__(self, nico: NicoChannelPlus, channel_id: ChannelID, video_list: list, output: str,
+class ChannelDownloader(object):
+    def __init__(self, nico: NCP, channel_id: ChannelID, video_list: list, output: str,
                  target_resolution: tuple = None, resume: bool = None, transcode: bool = None, ffmpeg: str = 'ffmpeg',
                  vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None,
                  thread: int = 1, wait: float = 1) -> None:
@@ -42,7 +42,7 @@ class ChannelDownloader:
         self.thread = thread
         self.wait = wait
 
-        self.ChannelManager = ChannelManager(self.output, wait=self.wait, resume=self.resume)
+        self.ChannelManager = ChannelManager(self.nico, self.output, wait=self.wait, resume=self.resume)
 
         # workflow
         self.__init_manager()

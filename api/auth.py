@@ -10,7 +10,7 @@ import jwt
 import time
 
 
-class NicoChannelAuth:
+class NCPAuth(object):
     def __init__(self, username: str, password: str,
                  site_base: str, platform_id: str, client_id: str, auth0_domain: str, audience: str) -> None:
         self.session = session()
@@ -68,7 +68,7 @@ class NicoChannelAuth:
             'client_id': self.client_id,
             'code_challenge': self.code_challenge,
             'code_challenge_method': 'S256',
-            # some ext parameters are missing for site other than nicochannel.jp
+            # some ext parameters are missing for site other than the main site
             # Those parameters are not important(maybe)
             'ext-group_id': "1",
             'ext-login_enable': 'null',
