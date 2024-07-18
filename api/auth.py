@@ -43,7 +43,7 @@ class NCPAuth(object):
             'Auth0-Client': self.auth0_client
         }
 
-        self.access_token, self.refresh_token = self.__login()
+        self.access_token, self.refresh_token = self.__initial_token()
 
     def __str__(self) -> str:
         self.__auto_refresh()
@@ -57,6 +57,14 @@ class NCPAuth(object):
         openid_configuration = r.json()
 
         return openid_configuration['authorization_endpoint'], openid_configuration['token_endpoint']
+
+    def __initial_token(self) -> Tuple[str, str]:
+        try:
+            with open(f'tokens_{hashlib.md5(self.username.encode()).hexdigest()}.json', 'r') as f:
+                tokens = json.load(f)
+                return tokens['access_token'], tokens['refresh_token']
+        except FileNotFoundError:
+            return self.__login()
 
     def __prepare_authorize_url(self) -> str:
         """
@@ -88,7 +96,7 @@ class NCPAuth(object):
 
     def __login(self) -> Tuple[str, str]:
         """
-        Login
+        Login, or Initial from stored token
 
         workflow:
         - get authorize url -> this will redirect to login page
@@ -118,6 +126,14 @@ class NCPAuth(object):
             raise Exception('Failed to get access token')
 
         token = r_token.json()
+
+        # dump tokens to file
+        with open(f'tokens_{hashlib.md5(self.username.encode()).hexdigest()}.json', 'w') as f:
+            json.dump({
+                'access_token': token['access_token'],
+                'refresh_token': token['refresh_token']
+            }, f)
+
         return token['access_token'], token['refresh_token']
 
     def __refresh(self) -> Tuple[str, str]:
@@ -134,9 +150,17 @@ class NCPAuth(object):
             'refresh_token': self.refresh_token
         }, headers=self.headers)
         if r_token.status_code != 200:
+            # failed to refresh access token, login again
             raise Exception('Failed to refresh access token')
 
         token = r_token.json()
+
+        # dump tokens to file
+        with open(f'tokens_{hashlib.md5(self.username.encode()).hexdigest()}.json', 'w') as f:
+            json.dump({
+                'access_token': token['access_token'],
+                'refresh_token': token['refresh_token']
+            }, f)
 
         return token['access_token'], token['refresh_token']
 

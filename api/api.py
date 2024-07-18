@@ -100,8 +100,8 @@ class NCP(object):
             r = requests.get(urljoin(query.geturl(), './site/settings.json'))
             if r.status_code == 200 and r.headers['Content-Type'] == 'application/json':
                 return ChannelID(r.json()['fanclub_site_id'])
-            else:
-                return None
+
+        return None
 
     def get_channel_info(self, channel_id: ChannelID) -> dict:
         """Get channel info from channel id"""
