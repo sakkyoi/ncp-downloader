@@ -13,27 +13,28 @@ from util.manager import M3U8Manager
 
 
 class M3U8Downloader(object):
+    """
+    Download video from m3u8 url
+
+    Args:
+        nico (NCP): NCP object
+        session_id (SessionID): session id of video
+        output (str): output file name without extension
+        targer_resolution (tuple, optional): target resolution of video. Defaults to None.
+        resume (bool, optional): resume download. Defaults to None.
+        transcode (bool, optional): transcode video. Defaults to None.
+        ffmpeg (str, optional): ffmpeg path. Defaults to 'ffmpeg'.
+        vcodec (str, optional): video codec. Defaults to 'copy'.
+        acodec (str, optional): audio codec. Defaults to 'copy'.
+        ffmpeg_options (list, optional): ffmpeg options. Defaults to None.
+        thread (int, optional): number of threads. Defaults to 1.
+        tip (str, optional): tip for alive_bar. Defaults to None.
+        wait (float, optional): wait time between each request(exclude download). Defaults to 1.
+    """
     def __init__(self, nico: NCP, session_id: SessionID, output: str, targer_resolution: tuple = None,
                  resume: bool = None, transcode: bool = None,
                  ffmpeg: str = 'ffmpeg', vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None,
                  thread: int = 1, tip: str = None, wait: float = 1) -> None:
-        """
-        Download video from m3u8 url
-
-        Args:
-            session_id (SessionID): session id of video
-            output (str): output file name without extension
-            targer_resolution (tuple, optional): target resolution of video. Defaults to None.
-            resume (bool, optional): resume download. Defaults to None.
-            transcode (bool, optional): transcode video. Defaults to None.
-            ffmpeg (str, optional): ffmpeg path. Defaults to 'ffmpeg'.
-            vcodec (str, optional): video codec. Defaults to 'copy'.
-            acodec (str, optional): audio codec. Defaults to 'copy'.
-            ffmpeg_options (list, optional): ffmpeg options. Defaults to None.
-            thread (int, optional): number of threads. Defaults to 1.
-            tip (str, optional): tip for alive_bar. Defaults to None.
-            wait (float, optional): wait time between each request(exclude download). Defaults to 1.
-        """
         self.nico = nico
 
         self.session_id = session_id

@@ -37,7 +37,14 @@ class ContentCode(object):
 
 
 class NCP(object):
-    """The NCP API"""
+    """
+    The NCP API
+
+    Args:
+        site_base (str): site base
+        username (str, optional): username. Defaults to None.
+        password (str, optional): password. Defaults to None.
+    """
     def __init__(self, site_base: str, username: Optional[str], password: Optional[str]) -> None:
         self.site_base = f'https://{site_base}'
         self.headers = {

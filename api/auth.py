@@ -11,6 +11,18 @@ import time
 
 
 class NCPAuth(object):
+    """
+    NCP Auth
+
+    Args:
+        username (str): username
+        password (str): password
+        site_base (str): site base
+        platform_id (str): platform id
+        client_id (str): client id
+        auth0_domain (str): auth0 domain
+        audience (str): audience
+    """
     def __init__(self, username: str, password: str,
                  site_base: str, platform_id: str, client_id: str, auth0_domain: str, audience: str) -> None:
         self.session = session()

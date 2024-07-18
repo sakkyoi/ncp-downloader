@@ -7,26 +7,27 @@ from util.manager import ChannelManager
 
 
 class ChannelDownloader(object):
+    """
+    Download videos from channel
+
+    Args:
+        nico (NCP): NCP object
+        channel_id (ChannelID): channel id
+        video_list (list): list of video id
+        output (str): output directory
+        target_resolution (tuple, optional): target resolution of video. Defaults to None.
+        resume (bool, optional): resume download. Defaults to None.
+        transcode (bool, optional): transcode video. Defaults to None.
+        ffmpeg (str, optional): ffmpeg path. Defaults to 'ffmpeg'.
+        vcodec (str, optional): video codec. Defaults to 'copy'.
+        acodec (str, optional): audio codec. Defaults to 'copy'.
+        ffmpeg_options (list, optional): ffmpeg options. Defaults to None.
+        wait (float, optional): wait time between each request(exclude download). Defaults to 1.
+    """
     def __init__(self, nico: NCP, channel_id: ChannelID, video_list: list, output: str,
                  target_resolution: tuple = None, resume: bool = None, transcode: bool = None, ffmpeg: str = 'ffmpeg',
                  vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None,
                  thread: int = 1, wait: float = 1) -> None:
-        """
-        Download videos from channel
-
-        Args:
-            channel_id (ChannelID): channel id
-            video_list (list): list of video id
-            output (str): output directory
-            target_resolution (tuple, optional): target resolution of video. Defaults to None.
-            resume (bool, optional): resume download. Defaults to None.
-            transcode (bool, optional): transcode video. Defaults to None.
-            ffmpeg (str, optional): ffmpeg path. Defaults to 'ffmpeg'.
-            vcodec (str, optional): video codec. Defaults to 'copy'.
-            acodec (str, optional): audio codec. Defaults to 'copy'.
-            ffmpeg_options (list, optional): ffmpeg options. Defaults to None.
-            wait (float, optional): wait time between each request(exclude download). Defaults to 1.
-        """
         self.nico = nico
 
         self.channel_id = channel_id
