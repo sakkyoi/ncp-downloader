@@ -46,7 +46,7 @@ def main(
         query: Annotated[
             str,
             typer.Argument(
-                help='ID (Video), Name (Channel) or URL(Both) to be queried.',
+                help='URL to be queried.',
             )
         ],
         output: Annotated[

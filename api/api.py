@@ -71,7 +71,7 @@ class NCP(object):
         self.api_session_id = f'{self.api_base}/video_pages/%s/session_ids'  # content_code
         self.api_video_list = f'{self.api_base}/fanclub_sites/%s/video_pages?vod_type=%d&page=%d&per_page=%d&sort=%s'
         self.api_views_comments = f'{self.api_base}/fanclub_sites/%s/views_comments'  # channel_id
-        self.api_video_index = 'https://hls-auth.cloud.stream.co.jp/auth/index.m3u8?session_id=%s'
+        self.api_video_index = None  # this will be set when get_video_page is called
 
     def __initial_api(self) -> Tuple[str, str, str]:
         """Initial api base from settings"""
@@ -92,10 +92,7 @@ class NCP(object):
         """Get channel id from channel domain or name"""
         query = urlparse(query)
 
-        if query.netloc == '':
-            query = urlparse(urljoin('https://nicochannel.jp/', query.path.strip('/')))
-
-        if query.netloc == 'nicochannel.jp':
+        if self.fanclub_site_id == '1':
             for channel in self.list_channels():
                 if channel['domain'] == query.geturl().strip('/'):
                     return ChannelID(channel['id'])
@@ -180,6 +177,7 @@ class NCP(object):
                        _format: str = '%release_date% %title% [%content_code%]') -> Tuple[str, str]:
         """Get video name from content code"""
         video_page = self.get_video_page(content_code)
+        self.api_video_index = video_page['video_stream']['authenticated_url'].replace('{session_id}', '%s')
         title = video_page['title'] if video_page is not None \
             else 'unknown' if known_title is None else known_title
         title = sanitize_filename(title, '_')  # sanitize filename
