@@ -70,7 +70,7 @@ class ChannelDownloader(object):
             output_name, _ = self.nico.get_video_name(video, self.ChannelManager.get_title(str(video)))
             output = str(Path(self.output).joinpath(f'{output_name}'))
 
-            tip = f'({self.done+1}/{self.total})'
+            tip = f'({self.done}/{self.total})'
 
             m3u8_downloader = M3U8Downloader(self.nico, session_id, output, self.target_resolution,
                                              self.ChannelManager.continue_exists_video, self.transcode,
