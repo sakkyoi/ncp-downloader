@@ -70,6 +70,8 @@ class M3U8Downloader(object):
             self.__init_manager()
             self.__download_threading()
             self.__concat_temp()
+        else:
+            self.alive_bar.__exit__(None, None, None)  # hot fix for bug when video is a live stream
 
     def __get_video_index(self) -> bool:
         """Get video index from session id"""
