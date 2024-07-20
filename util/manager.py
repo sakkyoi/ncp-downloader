@@ -3,10 +3,12 @@ from typing import Tuple
 
 from m3u8 import model
 from tinydb import TinyDB, Query
-from click import confirm
+import inquirer
+from rich.progress import TaskID
 from api.api import NCP
 import time
-from alive_progress import alive_bar
+
+from util.progress import ProgressManager
 
 
 class M3U8Manager(object):
@@ -25,7 +27,12 @@ class M3U8Manager(object):
 
     def init_manager(self, segment_list: model.SegmentList) -> float:
         if self.resume is None and self.segment_db_path.exists():
-            self.resume = confirm('Found existing task, do you want to continue?', default=True)
+            questions = [
+                inquirer.List('resume', message='Found existing task, do you want to continue?',
+                              choices=['Yes', 'No'], default='Yes')
+            ]
+            answer = inquirer.prompt(questions)['resume']
+            self.resume = True if answer == 'Yes' else False
         if self.segment_db_path.exists() and self.resume:
             db = TinyDB(self.segment_db_path)
         else:
@@ -66,8 +73,8 @@ class M3U8Manager(object):
 
 
 class ChannelManager(object):
-    def __init__(self, nico: NCP, output: str, wait: float = 1, resume: bool = None):
-        self.nico = nico
+    def __init__(self, api_client: NCP, output: str, wait: float = 1, resume: bool = None):
+        self.api_client = api_client
         self.output = pathlib.Path(output)
         self.wait = wait
         self.resume = resume
@@ -83,30 +90,37 @@ class ChannelManager(object):
         if not self.temp.exists():
             self.temp.mkdir()
 
-    def init_manager(self, video_list: list) -> Tuple[int, int]:
+    def init_manager(self, video_list: list, progress_manager: ProgressManager, task: TaskID) -> Tuple[int, int]:
         if self.resume is None and self.channel_db_path.exists():
-            self.resume = confirm('Found existing task, do you want to continue?', default=True)
-            self.continue_exists_video = confirm('Continue existing videos task?', default=True)
+            with progress_manager.pause():
+                answer = inquirer.prompt([
+                    inquirer.List('resume', message='Found existing task, do you want to continue?',
+                                  choices=['Yes', 'No'], default='Yes'),
+                    inquirer.List('continue', message='Continue existing videos task?',
+                                  choices=['Yes', 'No'], default='Yes')
+                ])
+                self.resume = True if answer['resume'] == 'Yes' else False
+                self.continue_exists_video = True if answer['continue'] == 'Yes' else False
         else:
             self.continue_exists_video = True if self.resume else False
 
         if self.channel_db_path.exists() and self.resume:
             db = TinyDB(self.channel_db_path)
             count_new = 0
-            with alive_bar(len(video_list), force_tty=True) as bar:
-                bar.title('Initializing')
-                for video in video_list:
-                    if not db.contains(Query().id == str(video)):
-                        _, title = self.nico.get_video_name(video)
-                        db.insert({
-                            'id': str(video),
-                            'title': title,
-                            'done': False
-                        })
-                        count_new += 1
-                        time.sleep(self.wait)  # don't spam the server
-                    bar()
-                bar.title('done!')
+
+            progress_manager.overall_update(task, total=len(video_list))
+            for video in video_list:
+                if not db.contains(Query().id == str(video)):
+                    _, title = self.api_client.get_video_name(video)
+                    db.insert({
+                        'id': str(video),
+                        'title': title,
+                        'done': False
+                    })
+                    count_new += 1
+                    time.sleep(self.wait)  # don't spam the server
+                progress_manager.overall_update(task, advance=1)
+            progress_manager.overall_update(task, description='done!')
 
             print(f'Found {len(video_list)} videos, {count_new} new videos added')
         else:
@@ -114,18 +128,18 @@ class ChannelManager(object):
                 self.remove_temp(False)
 
             db = TinyDB(self.channel_db_path)
-            with alive_bar(len(video_list), force_tty=True) as bar:
-                bar.title('Initializing')
-                for video in video_list:
-                    _, title = self.nico.get_video_name(video)
-                    db.insert({
-                        'id': str(video),
-                        'title': title,
-                        'done': False
-                    })
-                    time.sleep(self.wait)  # don't spam the server
-                    bar()
-                bar.title('done!')
+
+            progress_manager.overall_update(task, total=len(video_list))
+            for video in video_list:
+                _, title = self.api_client.get_video_name(video)
+                db.insert({
+                    'id': str(video),
+                    'title': title,
+                    'done': False
+                })
+                time.sleep(self.wait)  # don't spam the server
+                progress_manager.overall_update(task, advance=1)
+            progress_manager.overall_update(task, description='done!')
 
             print(f'Found {len(video_list)} videos, {len(video_list)} new videos added')
 

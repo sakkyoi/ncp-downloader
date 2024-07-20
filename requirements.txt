@@ -2,7 +2,7 @@ click==8.1.7
 requests==2.32.3
 m3u8==5.1.0
 pycryptodome==3.19.1
-alive-progress==3.1.5
+inquirer==3.3.0
 tinydb==4.8.0
 pathvalidate==3.2.0
 typer[all]==0.12.3

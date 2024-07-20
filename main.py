@@ -1,18 +1,19 @@
 import sys
 
 import click
-from click import confirm
+import inquirer
 import typer
 from typing_extensions import Annotated
 from typing import Optional
-from rich.console import Console
 from urllib.parse import urlparse
 from pathlib import Path
+from rich.console import Console
 
 from api.api import NCP, ContentCode
 from util.ffmpeg import FFMPEG
 from util.m3u8_downloader import M3U8Downloader
 from util.channel_downloader import ChannelDownloader
+from util.progress import ProgressManager
 
 
 class Resolution(click.ParamType):
@@ -159,8 +160,8 @@ def main(
     """The NCP Downloader"""
     err_console = Console(stderr=True)
 
-    # nico
-    nico = NCP(urlparse(query).netloc, username, password)
+    api_client = NCP(urlparse(query).netloc, username, password)
+    progress_manager = ProgressManager()
 
     try:
         # Check ffmpeg if transcode is enabled
@@ -173,48 +174,68 @@ def main(
             experimental = resume = yes
 
         # tell user multithreading is dengerous
-        if (thread > 1 and
-                not confirm('Download with multithreading may got you banned from Server. Continue?', default=False)):
-            raise RuntimeError('Aborted.')
+        # can not be skipped by --yes
+        if thread > 1:
+            with progress_manager.pause():
+                if inquirer.prompt([
+                    inquirer.List('thread', message='Multithreading is dangerous, are you sure to continue?',
+                                  choices=['Yes', 'No'], default='No')], raise_keyboard_interrupt=True)['thread'] == 'No':
+                    raise RuntimeError('Aborted.')
 
         # Check if query is channel or video
-        if nico.get_channel_id(query) is None:
+        if api_client.get_channel_id(query) is None:
             query = urlparse(query).path.strip('/').split('/')[-1]
-            session_id = nico.get_session_id(ContentCode(query))
+            session_id = api_client.get_session_id(ContentCode(query))
 
             # Check if video exists
             if session_id is None:
                 raise ValueError('Video not found or permission denied.')
 
-            output_name, _ = nico.get_video_name(ContentCode(query))
+            output_name, _ = api_client.get_video_name(ContentCode(query))
 
             output = str(Path(output).joinpath(output_name))
 
-            M3U8Downloader(nico, session_id, output, resolution, resume, transcode,
-                           ffmpeg, vcodec, acodec, ffmpeg_options, thread)
+            with progress_manager:
+                m3u8_downloader = M3U8Downloader(api_client, progress_manager, session_id, output, resolution, resume,
+                                                 transcode, ffmpeg, vcodec, acodec, ffmpeg_options, thread)
+                if not m3u8_downloader.start():
+                    raise RuntimeError('Failed to download video.')
         else:
+            # warning for downloading whole channel if --yes is not set
             if not yes:
-                if not confirm('Sure to download whole channel?', default=True):
-                    raise RuntimeError('Aborted.')
+                with progress_manager.pause():
+                    if inquirer.prompt([
+                        inquirer.List('channel', message='Sure to download whole channel?',
+                                      choices=['Sure', 'No'], default='No')
+                    ], raise_keyboard_interrupt=True)['channel'] == 'No':
+                        raise RuntimeError('Aborted.')
 
+            # asking for using experimental download method if --experimental is not set
             if experimental is None:
-                experimental = confirm('Using experimental download method?', default=True)
+                with progress_manager.pause():
+                    experimental = True if inquirer.prompt([
+                        inquirer.List('experimental', message='Using experimental download method?',
+                                      choices=['Yes', 'No'], default='No')
+                    ], raise_keyboard_interrupt=True)['experimental'] == 'Yes' else False
 
             # Get channel infomation
-            channel_id = nico.get_channel_id(query)
-            channel_name = nico.get_channel_info(channel_id)['fanclub_site_name']
+            channel_id = api_client.get_channel_id(query)
+            channel_name = api_client.get_channel_info(channel_id)['fanclub_site_name']
 
             # Get video list
             if experimental:
-                video_list = nico.list_videos_x(channel_id)
+                video_list = api_client.list_videos_x(channel_id)
             else:
-                video_list = nico.list_videos(channel_id)
+                video_list = api_client.list_videos(channel_id)
                 video_list = [ContentCode(video['content_code']) for video in video_list]
 
             output = str(Path(output).joinpath(channel_name))
 
-            ChannelDownloader(nico, channel_id, video_list, output, resolution, resume,
-                              transcode, ffmpeg, vcodec, acodec, ffmpeg_options, thread)
+            with progress_manager:
+                channel_downloader = ChannelDownloader(api_client, progress_manager, channel_id, video_list, output,
+                                                       resolution, resume,
+                                                       transcode, ffmpeg, vcodec, acodec, ffmpeg_options, thread)
+                channel_downloader.start()
     except Exception as e:
         # Raise exception again if debug is enabled
         if debug:
