@@ -66,6 +66,7 @@ class M3U8Downloader(object):
         """Start downloading video"""
         # check if video is available and get video index
         if not self.__get_video_index():
+            self.progress_manager.stop_task(self.task)
             return False
 
         # workflow

@@ -52,6 +52,10 @@ class ProgressManager:
                total: float | None = None, completed: float | None = None, advance: float | None = None) -> None:
         self.progress.update(task, description=description, total=total, completed=completed, advance=advance)
 
+    def stop_task(self, task: TaskID) -> None:
+        self.progress.stop_task(task)
+        self.progress.update(task, visible=False)
+
     @contextmanager
     def pause(self):
         self.live.stop()  # <--- this stop the live rendering

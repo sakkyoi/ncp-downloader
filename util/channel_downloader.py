@@ -26,9 +26,9 @@ class ChannelDownloader(object):
         ffmpeg_options (list, optional): ffmpeg options. Defaults to None.
         wait (float, optional): wait time between each request(exclude download). Defaults to 1.
     """
-    def __init__(self, api_client: NCP, progress_manager: ProgressManager, channel_id: ChannelID, video_list: list, output: str,
-                 target_resolution: tuple = None, resume: bool = None, transcode: bool = None, ffmpeg: str = 'ffmpeg',
-                 vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None,
+    def __init__(self, api_client: NCP, progress_manager: ProgressManager, channel_id: ChannelID, video_list: list,
+                 output: str, target_resolution: tuple = None, resume: bool = None, transcode: bool = None,
+                 ffmpeg: str = 'ffmpeg', vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None,
                  thread: int = 1, wait: float = 1) -> None:
         # args
         self.api_client = api_client
@@ -91,7 +91,8 @@ class ChannelDownloader(object):
             if m3u8_downloader.start() and m3u8_downloader.done:
                 self.ChannelManager.set_status(str(video), True)
             else:
-                print(f'Failed to download video {video}.')
+                self.progress_manager.live.console.print(f'Failed to download video [bold white]{video}[/bold white].',
+                                                         style='yellow')
                 continue
 
             self.progress_manager.overall_update(self.task, advance=1)
