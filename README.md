@@ -18,6 +18,7 @@ QUERY is a URL of video or channel.
 --acodec ACODEC                             Audio codec for transcoding.
 --ffmpeg-options FFMPEG_OPTIONS             Additional ffmpeg options. (e.g. --ffmpeg-options "-acodec copy -vcodec copy")
 --thread THREAD                             Number of threads for downloading. Defaults to 1. (highly not recommended)
+--select-manually                           Select video manually. This option only works with channel.
 --username USERNAME                         Username for login.
 --password PASSWORD                         Password for login.
 --debug                                     Enable debug mode.

@@ -29,7 +29,7 @@ class ChannelDownloader(object):
     def __init__(self, api_client: NCP, progress_manager: ProgressManager, channel_id: ChannelID, video_list: list,
                  output: str, target_resolution: tuple = None, resume: bool = None, transcode: bool = None,
                  ffmpeg: str = 'ffmpeg', vcodec: str = 'copy', acodec: str = 'copy', ffmpeg_options: list = None,
-                 thread: int = 1, wait: float = 1) -> None:
+                 thread: int = 1, select_manually: bool = False, wait: float = 1) -> None:
         # args
         self.api_client = api_client
         self.progress_manager = progress_manager
@@ -44,10 +44,11 @@ class ChannelDownloader(object):
         self.acodec = acodec
         self.ffmpeg_options = ffmpeg_options
         self.thread = thread
+        self.select_manually = select_manually
         self.wait = wait
 
         # init manager
-        self.ChannelManager = ChannelManager(self.api_client, self.output, wait=self.wait, resume=self.resume)
+        self.ChannelManager = ChannelManager(self.api_client, self.output, select_manually, self.wait, self.resume)
 
         # init task progress
         self.task = self.progress_manager.add_overall_task(f'Starting', total=None)
@@ -72,7 +73,8 @@ class ChannelDownloader(object):
         self.progress_manager.overall_update(self.task, description='Overall Progress')
 
         for video in self.video_list:
-            if self.ChannelManager.get_status(str(video)):
+            # skip if video is already downloaded or status is None (not selected)
+            if self.ChannelManager.get_status(str(video)) or self.ChannelManager.get_status(str(video)) is None:
                 continue
 
             session_id = self.api_client.get_session_id(video)

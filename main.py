@@ -15,6 +15,8 @@ from util.m3u8_downloader import M3U8Downloader
 from util.channel_downloader import ChannelDownloader
 from util.progress import ProgressManager
 
+__import__('util.inquirer_console_render')  # hook for inquirer console render
+
 
 class Resolution(click.ParamType):
     name = 'Resolution'
@@ -131,9 +133,17 @@ def main(
             typer.Option(
                 '--thread',
                 show_default=True,
-                help='Number of threads. Better not more than your CPU core. Be careful with this option.',
+                help='Number of threads. Be careful with this option.',
             ),
         ] = 1,
+        select_manually: Annotated[
+            bool,
+            typer.Option(
+                '--select-manually',
+                show_default=False,
+                help='Select which video to download manually. This option only works with channel.',
+            ),
+        ] = False,
         username: Annotated[
             str,
             typer.Option(
@@ -158,8 +168,6 @@ def main(
         ] = False,
 ) -> None:
     """The NCP Downloader"""
-    err_console = Console(stderr=True)
-
     api_client = NCP(urlparse(query).netloc, username, password)
     progress_manager = ProgressManager()
 
@@ -235,7 +243,8 @@ def main(
             with progress_manager:
                 channel_downloader = ChannelDownloader(api_client, progress_manager, channel_id, video_list, output,
                                                        resolution, resume,
-                                                       transcode, ffmpeg, vcodec, acodec, ffmpeg_options, thread)
+                                                       transcode, ffmpeg, vcodec, acodec, ffmpeg_options,
+                                                       thread, select_manually)
                 channel_downloader.start()
     except Exception as e:
         # Raise exception again if debug is enabled
