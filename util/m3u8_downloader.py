@@ -185,21 +185,6 @@ class M3U8Downloader(object):
         # the segment failed to download(status code not 200)
         return False
 
-    # This is the original download function, deprecated
-    # Just keep it here for reference
-    # def __download(self) -> None:
-    #     """Download video"""
-    #     self.bar.title(f'Downloading video {self.tip if self.tip is not None else ""}')
-    #     for segment in self.target_video.segments:
-    #         if self.M3U8Manager.get_status(self.target_video.segments.index(segment)):
-    #             continue
-    #         r = requests.get(segment.absolute_uri)
-    #         if r.status_code == 200:
-    #             with open(f'{self.M3U8Manager.temp}/{self.target_video.segments.index(segment)}.ts', 'ab') as f:
-    #                 f.write(self.key.decrypt(r.content))
-    #                 self.M3U8Manager.set_status(self.target_video.segments.index(segment), True)
-    #                 self.bar((self.target_video.segments.index(segment) + 1) / len(self.target_video.segments))
-
     def __concat_temp(self) -> None:
         """Concatenate temp files"""
         # We don't want to reset the elapsed time, so we don't reset the progress bar
