@@ -131,7 +131,7 @@ def main(
             typer.Option(
                 '--thread',
                 show_default=True,
-                help='Number of threads.',
+                help='Number of threads. Better not more than your CPU core. Be careful with this option.',
             ),
         ] = 1,
         username: Annotated[
@@ -177,9 +177,10 @@ def main(
         # can not be skipped by --yes
         if thread > 1:
             with progress_manager.pause():
-                if inquirer.prompt([
-                    inquirer.List('thread', message='Multithreading is dangerous, are you sure to continue?',
-                                  choices=['Yes', 'No'], default='No')], raise_keyboard_interrupt=True)['thread'] == 'No':
+                if inquirer.prompt([inquirer.List('thread',
+                                                  message='Multithreading is dangerous, are you sure to continue?',
+                                                  choices=['Yes', 'No'], default='No')],
+                                   raise_keyboard_interrupt=True)['thread'] == 'No':
                     raise RuntimeError('Aborted.')
 
         # Check if query is channel or video
@@ -242,7 +243,7 @@ def main(
             raise e
         # Print error message and exit if debug is disabled
         else:
-            err_console.print(f'[red]{e}[/red]')
+            progress_manager.live.console.print(f'{e}', style='red')
             sys.exit(1)
 
 

@@ -3,6 +3,7 @@ from typing import Tuple
 
 from m3u8 import model
 from tinydb import TinyDB, Query
+import pickle
 import inquirer
 from rich.progress import TaskID
 from api.api import NCP
@@ -16,7 +17,7 @@ class M3U8Manager(object):
         self.output = pathlib.Path(output)
         self.resume = resume
         self.temp = self.output.parent.joinpath(f'temp_{self.output.stem}')
-        self.segment_db_path = self.output.parent.joinpath(f'temp_{self.output.stem}/{self.output.stem}.json')
+        self.segment_db_path = self.output.parent.joinpath(f'temp_{self.output.stem}/{self.output.stem}.pickle')
 
         self.segment_db = None
 
@@ -33,8 +34,12 @@ class M3U8Manager(object):
             ]
             answer = inquirer.prompt(questions)['resume']
             self.resume = True if answer == 'Yes' else False
+
+        # resume download
         if self.segment_db_path.exists() and self.resume:
-            db = TinyDB(self.segment_db_path)
+            # load the list of segment status
+            db = pickle.load(open(self.segment_db_path, 'rb'))
+        # new download
         else:
             if self.temp.exists():
                 self.remove_temp(False)
@@ -43,25 +48,24 @@ class M3U8Manager(object):
             if not self.temp.joinpath('__DO NOT TOUCH FILES HERE__').exists():
                 self.temp.joinpath('__DO NOT TOUCH FILES HERE__').mkdir()
 
-            db = TinyDB(self.segment_db_path)
-            for segment in segment_list:
-                db.insert({
-                    'id': segment_list.index(segment),
-                    'done': False
-                })
+            # initial the list of segment status
+            db = [False] * len(segment_list)
+            # dump the list to pickle file
+            pickle.dump(db, open(self.segment_db_path, 'wb'))
 
+        # set the segment_db
         self.segment_db = db
 
-        return len(self.segment_db.search(Query().done == True)) / len(segment_list)
+        return sum(self.segment_db) / len(segment_list)
 
     def get_status(self, segment_id: int) -> bool:
-        return self.segment_db.get(Query().id == segment_id)['done']
+        return self.segment_db[segment_id]
 
     def set_status(self, segment_id: int, status: bool) -> None:
-        self.segment_db.update({'done': status}, Query().id == segment_id)
+        self.segment_db[segment_id] = status
+        pickle.dump(self.segment_db, open(self.segment_db_path, 'wb'))
 
     def remove_temp(self, remove_self: bool = True) -> None:
-        self.segment_db.close() if remove_self else None  # close db before removing temp folder
         for sub in self.temp.iterdir():
             if sub.is_dir():
                 for file in sub.iterdir():

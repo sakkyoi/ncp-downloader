@@ -4,7 +4,7 @@ from Crypto.Cipher import AES
 import time
 import inquirer
 from pathlib import Path
-import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from api.api import NCP, SessionID
 from util.ffmpeg import FFMPEG
@@ -143,34 +143,47 @@ class M3U8Downloader(object):
         # just update the description
         self.progress_manager.update(self.task, description=f'Downloading video')
 
-        threads = []
-        self.thread_results = [False] * self.thread
-        for segment in self.target_video.segments:
-            if self.M3U8Manager.get_status(self.target_video.segments.index(segment)):
-                continue
-            threads.append(threading.Thread(target=self.__download_thread, args=(segment,), daemon=True,
-                                            name=f'{self.target_video.segments.index(segment)}'))
-            threads[-1].start()
-            if len(threads) >= self.thread:
-                for thread in threads:
-                    thread.join()
+        while not all(self.M3U8Manager.segment_db):
+            # download video segments
+            with ThreadPoolExecutor(max_workers=self.thread) as executor:
+                futures = [executor.submit(self.__download_thread, segment) for segment in self.target_video.segments]
 
-                if not all(self.thread_results):
-                    raise ConnectionRefusedError('Connection refused by server')
-                for thread in threads:
-                    self.M3U8Manager.set_status(int(thread.name), True)
+                try:
+                    for future in as_completed(futures):
+                        future.result()
+                except KeyboardInterrupt:
+                    self.progress_manager.live.console.print(
+                        'got your interrupt request, hold on... do not press ctrl+c again', style='bold red on white')
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    raise KeyboardInterrupt
+                except Exception as e:
+                    raise e
 
-                self.progress_manager.update(self.task,
-                                             completed=(int(threads[-1].name) + 1) / len(self.target_video.segments))
-                threads = []
-
-    def __download_thread(self, segment: m3u8.Segment) -> None:
+    def __download_thread(self, segment: m3u8.Segment) -> bool:
         """Download video segment"""
+        # if the segment is already downloaded, skip
+        if self.M3U8Manager.get_status(self.target_video.segments.index(segment)):
+            # update progress bar
+            self.progress_manager.update(self.task,
+                                         completed=sum(self.M3U8Manager.segment_db) / len(self.target_video.segments))
+            return True
+
+        # or, download the segment
         r = requests.get(segment.absolute_uri, headers=self.api_client.headers)
         if r.status_code == 200:
-            with open(f'{self.M3U8Manager.temp}/{self.target_video.segments.index(segment)}.ts', 'ab') as f:
+            with open(f'{self.M3U8Manager.temp}/{self.target_video.segments.index(segment)}.ts', 'wb') as f:
                 f.write(self.key.decrypt(r.content))
-                self.thread_results[self.target_video.segments.index(segment) % self.thread] = True
+
+                # set the segment as downloaded
+                self.M3U8Manager.set_status(self.target_video.segments.index(segment), True)
+
+                # update progress bar
+                self.progress_manager.update(self.task, completed=sum(self.M3U8Manager.segment_db) / len(
+                    self.target_video.segments))
+                return True
+
+        # the segment failed to download(status code not 200)
+        return False
 
     # This is the original download function, deprecated
     # Just keep it here for reference
