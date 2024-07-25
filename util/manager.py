@@ -166,8 +166,13 @@ class ChannelManager(object):
                                       default=default)
                 ], raise_keyboard_interrupt=True)['videos']
 
+            # set unselected videos to None(skip)
             for video in set(choices) - set(selected):
                 db.update({'done': None}, Query().id == video)
+
+            # set selected videos to False(not done)
+            for video in set(selected) - set(default):
+                db.update({'done': False}, Query().id == video)
         else:
             selected = [video['id'] for video in db.search(Query().done != None)]
             if len(selected) != len(video_list):
