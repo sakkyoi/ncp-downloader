@@ -64,16 +64,22 @@ class M3U8Downloader(object):
 
     def start(self) -> bool:
         """Start downloading video"""
-        # check if video is available and get video index
-        if not self.__get_video_index():
-            self.progress_manager.stop_task(self.task)
-            return False
 
-        # workflow
-        self.__get_target_video()
-        self.__get_key()
-        self.__init_manager()
-        self.__download_threading()
+        # loop until all segments are downloaded
+        while True:
+            # check if video is available and get video index
+            if not self.__get_video_index():
+                self.progress_manager.stop_task(self.task)
+                return False
+
+            # workflow
+            self.__get_target_video()
+            self.__get_key()
+            self.__init_manager()
+            # until all segments are downloaded, break
+            if self.__download_threading():
+                break
+
         self.__concat_temp()
 
         return True
@@ -138,27 +144,31 @@ class M3U8Downloader(object):
         # update progress bar
         self.progress_manager.reset(self.task, total=1, completed=percentage)
 
-    def __download_threading(self) -> None:
+    def __download_threading(self) -> bool:
         """Download video segments with threading"""
         # because we already reset the progress bar in __init_manager, we don't need to reset it again
         # just update the description
         self.progress_manager.update(self.task, description=f'Downloading video')
 
-        while not all(self.M3U8Manager.segment_db):
-            # download video segments
-            with ThreadPoolExecutor(max_workers=self.thread) as executor:
-                futures = [executor.submit(self.__download_thread, segment) for segment in self.target_video.segments]
+        # download video segments
+        with ThreadPoolExecutor(max_workers=self.thread) as executor:
+            futures = [executor.submit(self.__download_thread, segment) for segment in self.target_video.segments]
 
-                try:
-                    for future in as_completed(futures):
-                        future.result()
-                except KeyboardInterrupt:
-                    self.progress_manager.live.console.print(
-                        'got your interrupt request, hold on... do not press ctrl+c again', style='bold red on white')
-                    executor.shutdown(wait=False, cancel_futures=True)
-                    raise KeyboardInterrupt
-                except Exception as e:
-                    raise e
+            try:
+                for future in as_completed(futures):
+                    future.result()
+            except KeyboardInterrupt:
+                self.progress_manager.live.console.print(
+                    'got your interrupt request, hold on... do not press ctrl+c again', style='bold red on white')
+                executor.shutdown(wait=False, cancel_futures=True)
+                raise KeyboardInterrupt
+            except Exception as e:
+                raise e
+
+        if not all(self.M3U8Manager.segment_db):
+            return False
+
+        return True
 
     def __download_thread(self, segment: m3u8.Segment) -> bool:
         """Download video segment"""
