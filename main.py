@@ -7,6 +7,7 @@ from typing_extensions import Annotated
 from typing import Optional
 from urllib.parse import urlparse
 from pathlib import Path
+import pylibimport
 
 from api.api import NCP, ContentCode
 from util.ffmpeg import FFMPEG
@@ -256,4 +257,9 @@ def main(
 
 
 if __name__ == "__main__":
+    # find all the .pyd files in the current directory
+    for pyd in Path('.').glob('*.pyd'):
+        # import the .pyd file
+        pylibimport.import_module(pyd.stem)
+
     typer.run(main)
