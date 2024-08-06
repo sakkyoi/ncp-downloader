@@ -74,14 +74,6 @@ def main(
                 help='Resume download.',
             ),
         ] = None,
-        experimental: Annotated[
-            Optional[bool],
-            typer.Option(
-                '--experimental/--normal', '-e/-ne',
-                show_default=False,
-                help='Experimental download method',
-            ),
-        ] = None,
         yes: Annotated[
             Optional[bool],
             typer.Option(
@@ -179,7 +171,7 @@ def main(
 
         # If yes is enabled, skip all confirmation
         if yes:
-            experimental = resume = yes
+            resume = yes
 
         # tell user multithreading is dengerous
         # can not be skipped by --yes
@@ -219,24 +211,13 @@ def main(
                     ], raise_keyboard_interrupt=True)['channel'] == 'No':
                         raise RuntimeError('Aborted.')
 
-            # asking for using experimental download method if --experimental is not set
-            if experimental is None:
-                with progress_manager.pause():
-                    experimental = True if inquirer.prompt([
-                        inquirer.List('experimental', message='Using experimental download method?',
-                                      choices=['Yes', 'No'], default='No')
-                    ], raise_keyboard_interrupt=True)['experimental'] == 'Yes' else False
-
             # Get channel infomation
             channel_id = api_client.get_channel_id(query)
             channel_name = api_client.get_channel_info(channel_id)['fanclub_site_name']
 
             # Get video list
-            if experimental:
-                video_list = api_client.list_videos_x(channel_id)
-            else:
-                video_list = api_client.list_videos(channel_id)
-                video_list = [ContentCode(video['content_code']) for video in video_list]
+            video_list = api_client.list_videos(channel_id)
+            video_list = [ContentCode(video['content_code']) for video in video_list]
 
             output = str(Path(output).joinpath(channel_name))
 

@@ -11,7 +11,6 @@ QUERY is a URL of video or channel.
 ```
 -r RESOLUTION, --resolution RESOLUTION      Target resolution. Defaults to highest resolution.
 -R, --resume                                Resume download.
--e, --experimental                          Experimental download method.
 -t, --transcode                             Transcode video.
 --ffmpeg FFMPEG                             Path to ffmpeg. Defaults to ffmpeg in PATH.
 --vcodec VCODEC                             Video codec for transcoding.
