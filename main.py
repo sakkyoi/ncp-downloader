@@ -7,7 +7,6 @@ from typing_extensions import Annotated
 from typing import Optional
 from urllib.parse import urlparse
 from pathlib import Path
-from rich.console import Console
 
 from api.api import NCP, ContentCode
 from util.ffmpeg import FFMPEG

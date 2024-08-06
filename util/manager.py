@@ -5,7 +5,6 @@ from m3u8 import model
 from tinydb import TinyDB, Query
 import pickle
 import inquirer
-from inquirer.themes import term
 from rich.progress import TaskID
 from rich.panel import Panel
 from api.api import NCP
@@ -151,10 +150,7 @@ class ChannelManager(object):
             # select videos to download
             with progress_manager.pause():
                 locked = [video['id'] for video in db.search(Query().done == True)]
-                hints = {
-                    video['id']: f'{video['title']}'
-                                 f'{term.bold_red}{" (Done)" if video['done'] else ""}'
-                    for video in db.all()}
+                hints = {video['id']: video['title'] for video in db.all()}
                 choices = [f'{video['id']}' for video in db.all()]
                 default = [video['id'] for video in db.search(Query().done != None)]
 
