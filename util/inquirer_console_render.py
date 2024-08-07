@@ -1,6 +1,10 @@
 from inquirer.render.console import ConsoleRender
+from inquirer.render.console._checkbox import Checkbox
 from inquirer.themes import term
 import unicodedata
+from readchar import key
+
+_old_process_input = Checkbox.process_input  # save the original method
 
 
 def _print_options(self, render):
@@ -72,5 +76,61 @@ def make_hint(message, symbol, render, terminal_width):
     return hint
 
 
+def process_input_checkbox(self, pressed):
+    _old_process_input(self, pressed)
+
+    if pressed == key.CTRL_W:
+        f = input("Filter: ")
+        # Clear the print that inquirer made
+        print(self.terminal.move_up + self.terminal.clear_eol, end="")
+
+        # check if the filter is a command
+        if not f.startswith("/"):
+            return
+
+        f = f.split(" ")
+
+        # check if the filter is valid
+        if len(f) < 2:
+            return
+
+        command = f[0][1:]
+        f = " ".join(f[1:])
+
+        if command == "lambda":
+            # selection = filter(lambda x: eval(f), self.selection)
+            selection = filter(lambda x: eval(f),
+                               [DotDict({
+                                   "index": index,
+                                   "content_code": code,
+                                   "title": self.question.hints[code]
+                               }) for index, code in enumerate(self.question.choices)])
+
+            selection = [x.index for x in selection]
+        else:
+            selection = [i for i, c in enumerate(self.question.choices) if self.question.hints[c].lower().find(f.lower()) != -1]
+
+            if command == "add":
+                selection = list(set(self.selection + selection))
+            elif command == "remove":
+                selection = [i for i in self.selection if i not in selection]
+            elif command == "only":
+                selection = selection
+            else:
+                return
+
+            # add the locked options back if it is removed
+            selection = list(set(selection) | set([i for i, c in enumerate(self.question.choices) if c in self.locked]))
+
+        self.selection = selection
+
+
+class DotDict(dict):
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+
 ConsoleRender._print_options = _print_options  # override the method to print hints with options
 ConsoleRender._print_hint = lambda self, render: None  # do not print the hint line
+Checkbox.process_input = process_input_checkbox  # override the method to handle the input
