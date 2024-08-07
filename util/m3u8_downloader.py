@@ -243,4 +243,4 @@ class M3U8Downloader(object):
 
 
 if __name__ == '__main__':
-    raise Exception('This file is not meant to be executed')
+    raise RuntimeError('This file is not intended to be run as a standalone script.')

@@ -52,7 +52,7 @@ def count_string_width(string):
     """
     Count the width of a string. East Asian characters are counted as 2.
     """
-    # W: Wide, F: Full-width, A: Ambiguous(may be wide or narrow, depending on the context. consider as wide here)
+    # W: Wide, F: Full-width, A: Ambiguous(maybe wide or narrow, depending on the context. consider as wide here)
     return sum(1 + (unicodedata.east_asian_width(c) in 'WFA') for c in string)
 
 

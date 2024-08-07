@@ -199,4 +199,4 @@ class ChannelManager(object):
 
 
 if __name__ == '__main__':
-    pass
+    raise RuntimeError('This file is not intended to be run as a standalone script.')
