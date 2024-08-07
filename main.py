@@ -1,4 +1,5 @@
 import sys
+import platform
 
 import click
 import inquirer
@@ -238,9 +239,16 @@ def main(
 
 
 if __name__ == "__main__":
-    # find all the .pyd files in the current directory
-    for pyd in Path('.').glob('*.pyd'):
-        # import the .pyd file
+    # find all the .pyd(win) or .so(linux and macos), files in the current directory
+    if platform.system() == 'Windows':
+        pyds = Path('.').glob('*.pyd')
+    elif platform.system() == 'Linux' or platform.system() == 'Darwin':
+        pyds = Path('.').glob('*.so')
+    else:
+        raise RuntimeError('Unsupported platform')
+
+    # import all the .pyd or .so files
+    for pyd in pyds:
         pylibimport.import_module(pyd.stem)
 
     typer.run(main)
