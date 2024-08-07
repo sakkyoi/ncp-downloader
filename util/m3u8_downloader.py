@@ -1,6 +1,7 @@
 import requests
 import m3u8
 from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
 import time
 import inquirer
 from pathlib import Path
@@ -127,7 +128,7 @@ class M3U8Downloader(object):
         # get key from target video
         r = requests.get(self.target_video.keys[0].absolute_uri)
 
-        self.key = AES.new(r.content, AES.MODE_CBC)
+        self.key = AES.new(r.content, AES.MODE_CBC, get_random_bytes(16))
 
         time.sleep(self.wait)  # don't spam the server
 
