@@ -166,9 +166,8 @@ def main(
 
     try:
         # Check ffmpeg if transcode is enabled
-        if transcode:
-            if not FFMPEG(ffmpeg).check():
-                raise FileNotFoundError('ffmpeg not found')
+        if transcode and not FFMPEG(ffmpeg).check():
+            raise FileNotFoundError('ffmpeg not found')
 
         # If yes is enabled, skip all confirmation
         if yes:

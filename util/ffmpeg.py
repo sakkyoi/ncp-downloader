@@ -11,7 +11,7 @@ class FFMPEG(object):
         ffmpeg (str, optional): ffmpeg path. Defaults to 'ffmpeg'.
     """
     def __init__(self, ffmpeg: str = 'ffmpeg') -> None:
-        self.ffmpeg = ffmpeg
+        self.ffmpeg_path = ffmpeg
         self.cmd = None
         self.process = None
 
@@ -28,7 +28,7 @@ class FFMPEG(object):
     def check(self) -> bool:
         """Check if ffmpeg is installed"""
         try:
-            subprocess.run([self.ffmpeg, '-version'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run([self.ffmpeg_path, '-version'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return True
         except FileNotFoundError:
             return False
@@ -38,7 +38,7 @@ class FFMPEG(object):
         if options is None:
             options = []
 
-        self.cmd = [self.ffmpeg,
+        self.cmd = [self.ffmpeg_path,
                     '-progress', '-', '-nostats', '-y',
                     '-i', _input,
                     '-vcodec', vcodec,
@@ -72,7 +72,7 @@ class FFMPEG(object):
                 if progress_time:
                     progress = int(progress_time.group('hour')) * 3600 + int(progress_time.group('min')) * 60 + int(
                         progress_time.group('sec'))
-                    yield progress / self.total_duration  # yield progress
+                    yield progress / self.total_duration  # return progress in percentage
 
         if self.process.poll() != 0:
             raise RuntimeError(f'Error while transcoding: {self.last_line}')
