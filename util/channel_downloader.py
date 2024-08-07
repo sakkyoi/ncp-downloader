@@ -48,7 +48,8 @@ class ChannelDownloader(object):
         self.wait = wait
 
         # init manager
-        self.channel_manager = ChannelManager(self.api_client, self.output, select_manually, self.wait, self.resume)
+        self.channel_manager = ChannelManager(self.api_client, self.output, self.select_manually, self.progress_manager,
+                                              self.wait, self.resume)
 
         # init task progress
         self.task = self.progress_manager.add_overall_task('Starting', total=None)
@@ -62,7 +63,7 @@ class ChannelDownloader(object):
         # update progress bar
         self.progress_manager.overall_reset(self.task, description='Initializing')
 
-        done, total = self.channel_manager.init_manager(self.video_list, self.progress_manager, self.task)
+        done, total = self.channel_manager.init_manager(self.video_list, self.task)
 
         self.progress_manager.overall_update(self.task, completed=done, total=total)
 
