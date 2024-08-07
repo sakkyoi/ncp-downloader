@@ -1,7 +1,6 @@
 from inquirer.render.console import ConsoleRender
 from inquirer.themes import term
 import unicodedata
-from typing import Optional
 
 
 def _print_options(self, render):
