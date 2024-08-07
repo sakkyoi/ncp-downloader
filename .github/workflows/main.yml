@@ -27,7 +27,7 @@ jobs:
       with:
         python-version: 3.12
     - run: pip install -r requirements.txt pyinstaller Pillow
-    - run: pyinstaller main.py --onefile --collect-data=grapheme --name=ncp-${{ matrix.name }}
+    - run: pyinstaller main.py --onefile --collect-data=grapheme --copy-metadata readchar --name=ncp-${{ matrix.name }} --hidden-import util.inquirer_console_render
     - run: ./dist/ncp-${{ matrix.name }} --help
     - run: |
         echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
