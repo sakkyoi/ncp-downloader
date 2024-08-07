@@ -77,7 +77,6 @@ class NCP(object):
         self.api_public_status = f'{self.api_base}/video_pages/%s/public_status'  # content_code
         self.api_session_id = f'{self.api_base}/video_pages/%s/session_ids'  # content_code
         self.api_video_list = f'{self.api_base}/fanclub_sites/%s/video_pages?vod_type=%d&page=%d&per_page=%d&sort=%s'
-        self.api_views_comments = f'{self.api_base}/fanclub_sites/%s/views_comments'  # channel_id
         self.api_video_index = 'https://hls-auth.cloud.stream.co.jp/auth/index.m3u8?session_id=%s'  # session_id
 
     def __initial_api(self) -> Tuple[str, str, str]:
@@ -120,14 +119,6 @@ class NCP(object):
         r = requests.get(self.api_channels, headers=self.headers)
         return r.json()['data']['content_providers']
 
-    def list_views_comments(self, channel_id: ChannelID) -> list:
-        """Get count of views and comments of channel from channel id \n
-        This api using different method to get video list \n
-        This api can set specific video, like ?content_codes[]=xxxxxx&content_codes[]=xxxxxx&..., \
-        but it's not implemented here"""
-        r = requests.get(self.api_views_comments % channel_id, headers=self.headers)
-        return r.json()['data']['video_aggregate_infos']
-
     def list_videos(self,
                     channel_id: ChannelID,
                     vod_type: int = 0,
@@ -144,11 +135,6 @@ class NCP(object):
                                  headers=self.headers)
                 video_list += r.json()['data']['video_pages']['list']
         return video_list
-
-    def list_videos_x(self, channel_id: ChannelID) -> list:
-        """Get video list of channel from channel id by views and comments count list"""
-        views_comments = self.list_views_comments(channel_id)
-        return [ContentCode(video['content_code']) for video in views_comments]
 
     def list_lives(self, channel_id: str, live_type) -> list:
         """Get live list of channel from channel id"""
