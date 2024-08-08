@@ -1,13 +1,13 @@
 `ncp-downloader` is a tool for network performance testing by downloading videos from a well-known online video platform. 
 
 <p align="left">
-  <a href="#installation">Installation</a>\
+  <a href="#installation">Installation </a>
   •
-  <a href="#usage">Usage</a>
+  <a href="#usage"> Usage </a>
   •
-  <a href="#disclaimer">Disclaimer</a>
+  <a href="#disclaimer"> Disclaimer </a>
   •
-  <a href="#license">License</a>
+  <a href="#license"> License</a>
 </p>
 
 # Installation
