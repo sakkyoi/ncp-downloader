@@ -63,7 +63,7 @@ def main(
             Resolution,
             typer.Option(
                 '--resolution', '-r',
-                help='Target resolution. Defaults to highest resolution.',
+                help='Target resolution. Defaults to highest resolution available.',
                 click_type=Resolution(),
             ),
         ] = None,
@@ -102,14 +102,14 @@ def main(
             str,
             typer.Option(
                 '--vcodec',
-                help='Video codec for ffmpeg.',
+                help='Video codec for ffmpeg transcoding.',
             ),
         ] = 'copy',
         acodec: Annotated[
             str,
             typer.Option(
                 '--acodec',
-                help='Audio codec for ffmpeg.',
+                help='Audio codec for ffmpeg transcoding.',
             ),
         ] = 'copy',
         ffmpeg_options: Annotated[
@@ -117,7 +117,7 @@ def main(
             typer.Option(
                 '--ffmpeg-options',
                 show_default=False,
-                help='Options for ffmpeg.',
+                help='Additional ffmpeg options.',
                 click_type=FFMPEGOptions(),
             ),
         ] = None,
@@ -126,7 +126,7 @@ def main(
             typer.Option(
                 '--thread',
                 show_default=True,
-                help='Number of threads. Be careful with this option.',
+                help='Number of threads for downloading. (NOT RECOMMENDED TO EDIT)',
             ),
         ] = 1,
         select_manually: Annotated[
@@ -134,7 +134,7 @@ def main(
             typer.Option(
                 '--select-manually',
                 show_default=False,
-                help='Select which video to download manually. This option only works with channel.',
+                help='Manually select videos to download. Only works when downloading the whole channel.',
             ),
         ] = False,
         username: Annotated[
@@ -156,7 +156,7 @@ def main(
             typer.Option(
                 '--debug',
                 show_default=False,
-                help='Enable debugging.',
+                help='Enable debug mode (displays debug messages).',
             ),
         ] = False,
 ) -> None:
@@ -168,7 +168,7 @@ def main(
     try:
         # check ffmpeg if transcode is enabled
         if transcode and not FFMPEG(ffmpeg).check():
-            raise FileNotFoundError('ffmpeg not found')
+            raise FileNotFoundError('ffmpeg not found.')
 
         # if yes is enabled, skip all confirmation
         if yes:
@@ -180,7 +180,7 @@ def main(
             with progress_manager.pause():
                 question = inquirer.prompt([
                     inquirer.List('thread',
-                                  message='Multithreading is dangerous, are you sure to continue?',
+                                  message='Multithreaded download risks your account and/or IP address being banned. Are you sure to continue?',
                                   choices=['Yes', 'No'], default='No')],
                     raise_keyboard_interrupt=True)
 
@@ -239,7 +239,7 @@ def load_patch():
     elif platform.system() == 'Linux' or platform.system() == 'Darwin':
         patches = Path('.').glob('*.so')
     else:
-        raise RuntimeError('Unsupported platform')
+        raise RuntimeError('Unsupported platform.')
 
     # import all the .pyd or .so files
     for patch in patches:
