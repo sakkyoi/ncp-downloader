@@ -78,10 +78,11 @@ class M3U8Manager(object):
 
 
 class ChannelManager(object):
-    def __init__(self, api_client: NCP, output: str, select_manually: bool, wait, resume):
+    def __init__(self, api_client: NCP, output: str, select_manually: bool, progress_manager: ProgressManager, wait, resume):
         self.api_client = api_client
         self.output = pathlib.Path(output)
         self.select_manually = select_manually
+        self.progress_manager = progress_manager
         self.wait = wait
         self.resume = resume
         self.temp = self.output.parent.joinpath('temp')
@@ -96,9 +97,9 @@ class ChannelManager(object):
         if not self.temp.exists():
             self.temp.mkdir()
 
-    def init_manager(self, video_list: list, progress_manager: ProgressManager, task: TaskID) -> Tuple[int, int]:
+    def init_manager(self, video_list: list, task: TaskID) -> Tuple[int, int]:
         if self.resume is None and self.channel_db_path.exists():
-            with progress_manager.pause():
+            with self.progress_manager.pause():
                 answer = inquirer.prompt([
                     inquirer.List('resume', message='Found existing task, do you want to continue?',
                                   choices=['Yes', 'No'], default='Yes'),
@@ -110,79 +111,79 @@ class ChannelManager(object):
         else:
             self.continue_exists_video = True if self.resume else False
 
-        count_new = 0
+        count_new = self.__init_database(video_list, task)  # init database
+        selected = self.__select_videos()  # select videos(if select manually, otherwise return selected videos from db)
 
-        progress_manager.overall_update(task, total=len(video_list))
-        if self.channel_db_path.exists() and self.resume:
-            db = TinyDB(self.channel_db_path)
-
-            for video in video_list:
-                if not db.contains(Query().id == str(video)):
-                    _, title = self.api_client.get_video_name(video)
-                    db.insert({
-                        'id': str(video),
-                        'title': title,
-                        'done': False
-                    })
-                    count_new += 1
-                    time.sleep(self.wait)  # don't spam the server
-                progress_manager.overall_update(task, advance=1)
-        else:
-            if self.channel_db_path.exists():
-                self.remove_temp(False)
-
-            db = TinyDB(self.channel_db_path)
-
-            for video in video_list:
-                _, title = self.api_client.get_video_name(video)
-                db.insert({
-                    'id': str(video),
-                    'title': title,
-                    'done': False
-                })
-                time.sleep(self.wait)  # don't spam the server
-                progress_manager.overall_update(task, advance=1)
-
-            count_new = len(video_list)
-        progress_manager.overall_update(task, description='done!')
-
-        if self.select_manually:
-            # select videos to download
-            with progress_manager.pause():
-                locked = [video['id'] for video in db.search(Query().done == True)]
-                hints = {video['id']: video['title'] for video in db.all()}
-                choices = [f'{video['id']}' for video in db.all()]
-                default = [video['id'] for video in db.search(Query().done != None)]
-
-                selected = inquirer.prompt([
-                    inquirer.Checkbox('videos', message='Select videos to download',
-                                      locked=locked,
-                                      hints=hints,
-                                      choices=choices,
-                                      default=default)
-                ], raise_keyboard_interrupt=True)['videos']
-
-            # set unselected videos to None(skip)
-            for video in set(choices) - set(selected):
-                db.update({'done': None}, Query().id == video)
-
-            # set selected videos to False(not done)
-            for video in set(selected) - set(default):
-                db.update({'done': False}, Query().id == video)
-        else:
-            selected = [video['id'] for video in db.search(Query().done != None)]
-            if len(selected) != len(video_list):
-                progress_manager.live.console.print('Warning: not all videos are selected. '
-                                                    '(use --select-manually to select manually)', style='yellow')
-
-        progress_manager.live.console.print(
+        self.progress_manager.live.console.print(
             Panel(f'Found {len(video_list)} videos, {count_new} new videos added, '
                   f'{sum(1 for _ in selected)} videos selected.',
                   title='Info'))
 
+        return len(self.channel_db.search(Query().done == True)), len(video_list)
+
+    def __init_database(self, video_list: list, task: TaskID) -> int:
+        # if not resume, remove the temp folder
+        if not self.resume and self.channel_db_path.exists():
+            self.remove_temp(False)
+
+        db = TinyDB(self.channel_db_path)
+
+        self.progress_manager.overall_update(task, total=len(video_list))
+        count_new = 0
+        for video in video_list:
+            if db.contains(Query().id == str(video)):
+                continue
+
+            _, title = self.api_client.get_video_name(video)
+            db.insert({
+                'id': str(video),
+                'title': title,
+                'done': False
+            })
+            count_new += 1
+            time.sleep(self.wait)  # don't spam the server
+
+            self.progress_manager.overall_update(task, advance=1)
+
+        self.progress_manager.overall_update(task, description='done!')
+
         self.channel_db = db
 
-        return len(self.channel_db.search(Query().done == True)), len(video_list)
+        return count_new
+
+    def __select_videos(self) -> list:
+        # return selected videos(from db) if not select manually
+        if not self.select_manually:
+            if self.channel_db.search(Query().done == None):
+                self.progress_manager.live.console.print('Warning: not all videos are selected. '
+                                                         '(use --select-manually to select manually)', style='yellow')
+
+            return [video['id'] for video in self.channel_db.search(Query().done != None)]
+
+        # select videos to download
+        with self.progress_manager.pause():
+            locked = [video['id'] for video in self.channel_db.search(Query().done == True)]
+            hints = {video['id']: video['title'] for video in self.channel_db.all()}
+            choices = [f'{video['id']}' for video in self.channel_db.all()]
+            default = [video['id'] for video in self.channel_db.search(Query().done != None)]
+
+            selected = inquirer.prompt([
+                inquirer.Checkbox('videos', message='Select videos to download',
+                                  locked=locked,
+                                  hints=hints,
+                                  choices=choices,
+                                  default=default)
+            ], raise_keyboard_interrupt=True)['videos']
+
+        # set unselected videos to None(skip)
+        for video in set(choices) - set(selected):
+            self.channel_db.update({'done': None}, Query().id == video)
+
+        # set selected videos to False(not done)
+        for video in set(selected) - set(default):
+            self.channel_db.update({'done': False}, Query().id == video)
+
+        return selected
 
     def get_title(self, content_code: str) -> str:
         return self.channel_db.get(Query().id == content_code)['title']
@@ -199,4 +200,4 @@ class ChannelManager(object):
 
 
 if __name__ == '__main__':
-    pass
+    raise RuntimeError('This file is not intended to be run as a standalone script.')

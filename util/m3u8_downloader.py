@@ -1,6 +1,7 @@
 import requests
 import m3u8
 from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
 import time
 import inquirer
 from pathlib import Path
@@ -51,14 +52,14 @@ class M3U8Downloader(object):
         self.wait = wait
 
         # init manager
-        self.M3U8Manager = M3U8Manager(f'{self.output}.ts', resume=self.resume)
+        self.m3u8_manager = M3U8Manager(f'{self.output}.ts', resume=self.resume)
 
         self.video_index = None
         self.target_video = None
         self.key = None
 
         # init task progress
-        self.task = self.progress_manager.add_task(f'Start downloading', total=None)
+        self.task = self.progress_manager.add_task('Start downloading', total=None)
 
         self.done = False
 
@@ -127,7 +128,7 @@ class M3U8Downloader(object):
         # get key from target video
         r = requests.get(self.target_video.keys[0].absolute_uri)
 
-        self.key = AES.new(r.content, AES.MODE_CBC)
+        self.key = AES.new(r.content, AES.MODE_CBC, get_random_bytes(16))
 
         time.sleep(self.wait)  # don't spam the server
 
@@ -137,9 +138,9 @@ class M3U8Downloader(object):
         # must stop live to prevent prompt not showing
         if self.resume is None:
             with self.progress_manager.pause():
-                percentage = self.M3U8Manager.init_manager(self.target_video.segments)
+                percentage = self.m3u8_manager.init_manager(self.target_video.segments)
         else:
-            percentage = self.M3U8Manager.init_manager(self.target_video.segments)
+            percentage = self.m3u8_manager.init_manager(self.target_video.segments)
 
         # update progress bar
         self.progress_manager.reset(self.task, total=1, completed=percentage)
@@ -148,7 +149,7 @@ class M3U8Downloader(object):
         """Download video segments with threading"""
         # because we already reset the progress bar in __init_manager, we don't need to reset it again
         # just update the description
-        self.progress_manager.update(self.task, description=f'Downloading video')
+        self.progress_manager.update(self.task, description='Downloading video')
 
         # download video segments
         with ThreadPoolExecutor(max_workers=self.thread) as executor:
@@ -162,10 +163,8 @@ class M3U8Downloader(object):
                     'got your interrupt request, hold on... do not press ctrl+c again', style='bold red on white')
                 executor.shutdown(wait=False, cancel_futures=True)
                 raise KeyboardInterrupt
-            except Exception as e:
-                raise e
 
-        if not all(self.M3U8Manager.segment_db):
+        if not all(self.m3u8_manager.segment_db):
             return False
 
         return True
@@ -173,23 +172,23 @@ class M3U8Downloader(object):
     def __download_thread(self, segment: m3u8.Segment) -> bool:
         """Download video segment"""
         # if the segment is already downloaded, skip
-        if self.M3U8Manager.get_status(self.target_video.segments.index(segment)):
+        if self.m3u8_manager.get_status(self.target_video.segments.index(segment)):
             # update progress bar
             self.progress_manager.update(self.task,
-                                         completed=sum(self.M3U8Manager.segment_db) / len(self.target_video.segments))
+                                         completed=sum(self.m3u8_manager.segment_db) / len(self.target_video.segments))
             return True
 
         # or, download the segment
         r = requests.get(segment.absolute_uri, headers=self.api_client.headers)
         if r.status_code == 200:
-            with open(f'{self.M3U8Manager.temp}/{self.target_video.segments.index(segment)}.ts', 'wb') as f:
+            with open(f'{self.m3u8_manager.temp}/{self.target_video.segments.index(segment)}.ts', 'wb') as f:
                 f.write(self.key.decrypt(r.content))
 
                 # set the segment as downloaded
-                self.M3U8Manager.set_status(self.target_video.segments.index(segment), True)
+                self.m3u8_manager.set_status(self.target_video.segments.index(segment), True)
 
                 # update progress bar
-                self.progress_manager.update(self.task, completed=sum(self.M3U8Manager.segment_db) / len(
+                self.progress_manager.update(self.task, completed=sum(self.m3u8_manager.segment_db) / len(
                     self.target_video.segments))
                 return True
 
@@ -199,11 +198,11 @@ class M3U8Downloader(object):
     def __concat_temp(self) -> None:
         """Concatenate temp files"""
         # We don't want to reset the elapsed time, so we don't reset the progress bar
-        self.progress_manager.update(self.task, description=f'Concatenating video', completed=0)
+        self.progress_manager.update(self.task, description='Concatenating video', completed=0)
 
         with open(f'{self.output}.ts', 'wb') as f:
             for segment in self.target_video.segments:
-                with open(f'{self.M3U8Manager.temp}/{self.target_video.segments.index(segment)}.ts', 'rb') as s:
+                with open(f'{self.m3u8_manager.temp}/{self.target_video.segments.index(segment)}.ts', 'rb') as s:
                     f.write(s.read())
 
                 percentage = (self.target_video.segments.index(segment) + 1) / len(self.target_video.segments)
@@ -220,7 +219,7 @@ class M3U8Downloader(object):
 
         if self.transcode:
             # update progress bar
-            self.progress_manager.update(self.task, description=f'Transcoding video', completed=0)
+            self.progress_manager.update(self.task, description='Transcoding video', completed=0)
 
             _input = Path(f'{self.output}.ts')
             _output = f'{_input.parent.joinpath(_input.stem)}.mp4'
@@ -236,11 +235,11 @@ class M3U8Downloader(object):
                     self.progress_manager.update(self.task, completed=1)
                     break
 
-        self.progress_manager.update(self.task, description=f'Removing temp files', completed=0, total=None)
-        self.M3U8Manager.remove_temp()
-        self.progress_manager.update(self.task, description=f'done!', completed=1)
+        self.progress_manager.update(self.task, description='Removing temp files', completed=0, total=None)
+        self.m3u8_manager.remove_temp()
+        self.progress_manager.update(self.task, description='done!', completed=1)
         self.done = True
 
 
 if __name__ == '__main__':
-    raise Exception('This file is not meant to be executed')
+    raise RuntimeError('This file is not intended to be run as a standalone script.')

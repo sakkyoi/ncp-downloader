@@ -171,8 +171,11 @@ class NCP(object):
         """Get video name from content code"""
         video_page = self.get_video_page(content_code)
 
-        title = video_page['title'] if video_page is not None \
-            else 'unknown' if known_title is None else known_title
+        if video_page is not None:
+            title = video_page['title']
+        else:
+            title = known_title if known_title is not None else 'unknown'
+
         title = sanitize_filename(title, '_')  # sanitize filename
 
         if video_page is not None:
@@ -189,4 +192,4 @@ class NCP(object):
 
 
 if __name__ == '__main__':
-    raise Exception('This file is not meant to be executed')
+    raise RuntimeError('This file is not intended to be run as a standalone script.')

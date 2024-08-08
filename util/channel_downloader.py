@@ -48,10 +48,11 @@ class ChannelDownloader(object):
         self.wait = wait
 
         # init manager
-        self.ChannelManager = ChannelManager(self.api_client, self.output, select_manually, self.wait, self.resume)
+        self.channel_manager = ChannelManager(self.api_client, self.output, self.select_manually, self.progress_manager,
+                                              self.wait, self.resume)
 
         # init task progress
-        self.task = self.progress_manager.add_overall_task(f'Starting', total=None)
+        self.task = self.progress_manager.add_overall_task('Starting', total=None)
 
     def start(self) -> None:
         self.__init_manager()
@@ -62,7 +63,7 @@ class ChannelDownloader(object):
         # update progress bar
         self.progress_manager.overall_reset(self.task, description='Initializing')
 
-        done, total = self.ChannelManager.init_manager(self.video_list, self.progress_manager, self.task)
+        done, total = self.channel_manager.init_manager(self.video_list, self.task)
 
         self.progress_manager.overall_update(self.task, completed=done, total=total)
 
@@ -74,7 +75,7 @@ class ChannelDownloader(object):
 
         for video in self.video_list:
             # skip if video is already downloaded or status is None (not selected)
-            if self.ChannelManager.get_status(str(video)) or self.ChannelManager.get_status(str(video)) is None:
+            if self.channel_manager.get_status(str(video)) or self.channel_manager.get_status(str(video)) is None:
                 continue
 
             session_id = self.api_client.get_session_id(video)
@@ -83,15 +84,15 @@ class ChannelDownloader(object):
                 warn(f'Video {video} not found or permission denied. Skip.', stacklevel=2)
                 continue
 
-            output_name, _ = self.api_client.get_video_name(video, self.ChannelManager.get_title(str(video)))
+            output_name, _ = self.api_client.get_video_name(video, self.channel_manager.get_title(str(video)))
             output = str(Path(self.output).joinpath(f'{output_name}'))
 
             m3u8_downloader = M3U8Downloader(self.api_client, self.progress_manager, session_id, output,
-                                             self.target_resolution, self.ChannelManager.continue_exists_video,
+                                             self.target_resolution, self.channel_manager.continue_exists_video,
                                              self.transcode, self.ffmpeg, self.vcodec, self.acodec, self.ffmpeg_options,
                                              self.thread)
             if m3u8_downloader.start() and m3u8_downloader.done:
-                self.ChannelManager.set_status(str(video), True)
+                self.channel_manager.set_status(str(video), True)
             else:
                 self.progress_manager.live.console.print(f'Failed to download video [bold white]{video}[/bold white].',
                                                          style='yellow')
@@ -101,4 +102,4 @@ class ChannelDownloader(object):
 
 
 if __name__ == '__main__':
-    pass
+    raise RuntimeError('This file is not intended to be run as a standalone script.')

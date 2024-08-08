@@ -1,6 +1,7 @@
 import subprocess
 from typing import Iterator
 import re
+from typing import Optional
 
 
 class FFMPEG(object):
@@ -11,7 +12,7 @@ class FFMPEG(object):
         ffmpeg (str, optional): ffmpeg path. Defaults to 'ffmpeg'.
     """
     def __init__(self, ffmpeg: str = 'ffmpeg') -> None:
-        self.ffmpeg = ffmpeg
+        self.ffmpeg_path = ffmpeg
         self.cmd = None
         self.process = None
 
@@ -28,7 +29,7 @@ class FFMPEG(object):
     def check(self) -> bool:
         """Check if ffmpeg is installed"""
         try:
-            subprocess.run([self.ffmpeg, '-version'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run([self.ffmpeg_path, '-version'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return True
         except FileNotFoundError:
             return False
@@ -38,7 +39,7 @@ class FFMPEG(object):
         if options is None:
             options = []
 
-        self.cmd = [self.ffmpeg,
+        self.cmd = [self.ffmpeg_path,
                     '-progress', '-', '-nostats', '-y',
                     '-i', _input,
                     '-vcodec', vcodec,
@@ -55,30 +56,49 @@ class FFMPEG(object):
             if self.process.stdout is None:
                 continue
 
-            line = self.process.stdout.readline().decode('utf-8', errors='replace').strip()
+            # read line from ffmpeg process
+            line = self.__read_line()
 
-            if line != '':
-                self.last_line = line
-
+            # trying to get total duration until it's found
             if self.total_duration is None:
-                total_dur_match = self.DUR_REGEX.search(line)
-                if total_dur_match:
-                    self.total_duration = int(total_dur_match.group('hour')) * 3600 + int(
-                        total_dur_match.group('min')) * 60 + int(total_dur_match.group('sec'))
-                else:
-                    continue
-            else:
-                progress_time = self.TIME_REGEX.search(line)
-                if progress_time:
-                    progress = int(progress_time.group('hour')) * 3600 + int(progress_time.group('min')) * 60 + int(
-                        progress_time.group('sec'))
-                    yield progress / self.total_duration  # yield progress
+                self.total_duration = self.__get_time(line, self.DUR_REGEX)
+                continue
+
+            progress_time = self.__get_time(line, self.TIME_REGEX)
+
+            if progress_time:
+                yield progress_time / self.total_duration  # return progress in percentage
 
         if self.process.poll() != 0:
             raise RuntimeError(f'Error while transcoding: {self.last_line}')
         else:
             yield None
 
+    def __read_line(self) -> str:
+        """Read line from ffmpeg process"""
+        line = self.process.stdout.readline()
+        line = line.decode('utf-8', errors='replace')
+        line = line.strip()
+
+        if line != '':
+            self.last_line = line
+
+        return line
+
+    @staticmethod
+    def __get_time(line: str, match: re.Pattern) -> Optional[int]:
+        """Try to get current time from ffmpeg output"""
+        time_match = match.search(line)
+
+        if not time_match:
+            return None
+
+        hour = int(time_match.group('hour'))
+        minute = int(time_match.group('min'))
+        second = int(time_match.group('sec'))
+
+        return hour * 3600 + minute * 60 + second
+
 
 if __name__ == '__main__':
-    pass
+    raise RuntimeError('This file is not intended to be run as a standalone script.')

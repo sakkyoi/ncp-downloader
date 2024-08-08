@@ -161,16 +161,16 @@ def main(
         ] = False,
 ) -> None:
     """The NCP Downloader"""
+    # Initialize NCP API client and progress manager
     api_client = NCP(urlparse(query).netloc, username, password)
     progress_manager = ProgressManager()
 
     try:
-        # Check ffmpeg if transcode is enabled
-        if transcode:
-            if not FFMPEG(ffmpeg).check():
-                raise FileNotFoundError('ffmpeg not found')
+        # check ffmpeg if transcode is enabled
+        if transcode and not FFMPEG(ffmpeg).check():
+            raise FileNotFoundError('ffmpeg not found')
 
-        # If yes is enabled, skip all confirmation
+        # if yes is enabled, skip all confirmation
         if yes:
             resume = yes
 
@@ -178,10 +178,13 @@ def main(
         # can not be skipped by --yes
         if thread > 1:
             with progress_manager.pause():
-                if inquirer.prompt([inquirer.List('thread',
-                                                  message='Multithreading is dangerous, are you sure to continue?',
-                                                  choices=['Yes', 'No'], default='No')],
-                                   raise_keyboard_interrupt=True)['thread'] == 'No':
+                question = inquirer.prompt([
+                    inquirer.List('thread',
+                                  message='Multithreading is dangerous, are you sure to continue?',
+                                  choices=['Yes', 'No'], default='No')],
+                    raise_keyboard_interrupt=True)
+
+                if question['thread'] == 'No':
                     raise RuntimeError('Aborted.')
 
         # Check if query is channel or video
@@ -203,15 +206,6 @@ def main(
                 if not m3u8_downloader.start():
                     raise RuntimeError('Failed to download video.')
         else:
-            # warning for downloading whole channel if --yes is not set
-            if not yes:
-                with progress_manager.pause():
-                    if inquirer.prompt([
-                        inquirer.List('channel', message='Sure to download whole channel?',
-                                      choices=['Sure', 'No'], default='No')
-                    ], raise_keyboard_interrupt=True)['channel'] == 'No':
-                        raise RuntimeError('Aborted.')
-
             # Get channel infomation
             channel_id = api_client.get_channel_id(query)
             channel_name = api_client.get_channel_info(channel_id)['fanclub_site_name']
@@ -238,17 +232,20 @@ def main(
             sys.exit(1)
 
 
-if __name__ == "__main__":
+def load_patch():
     # find all the .pyd(win) or .so(linux and macos), files in the current directory
     if platform.system() == 'Windows':
-        pyds = Path('.').glob('*.pyd')
+        patches = Path('.').glob('*.pyd')
     elif platform.system() == 'Linux' or platform.system() == 'Darwin':
-        pyds = Path('.').glob('*.so')
+        patches = Path('.').glob('*.so')
     else:
         raise RuntimeError('Unsupported platform')
 
     # import all the .pyd or .so files
-    for pyd in pyds:
-        pylibimport.import_module(pyd.stem)
+    for patch in patches:
+        pylibimport.import_module(patch.stem)
 
+
+if __name__ == "__main__":
+    load_patch()  # load patches
     typer.run(main)

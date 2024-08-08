@@ -64,7 +64,7 @@ class NCPAuth(object):
     def __initial_openid(self) -> Tuple[str, str]:
         r = self.session.get(self.openid_configuration)
         if r.status_code != 200:
-            raise Exception('Failed to get openid configuration')
+            raise RuntimeError('Failed to get openid configuration')
 
         openid_configuration = r.json()
 
@@ -117,7 +117,7 @@ class NCPAuth(object):
         """
         r_login_page = self.session.get(self.__prepare_authorize_url())
         if r_login_page.status_code != 200:
-            raise Exception('Failed to get login page')
+            raise RuntimeError('Failed to get login page')
 
         r_redirect = self.session.post(r_login_page.url, {
             'username': self.username,
@@ -125,7 +125,7 @@ class NCPAuth(object):
             'state': parse_qs(urlparse(r_login_page.url).query)['state'][0]
         }, headers=self.headers)
         if r_redirect.status_code != 404 and 'code' not in parse_qs(urlparse(r_redirect.url).query):
-            raise Exception('Failed to login')
+            raise RuntimeError('Failed to login')
 
         r_token = self.session.post(self.token_endpoint, {
             'client_id': self.client_id,
@@ -135,7 +135,7 @@ class NCPAuth(object):
             'redirect_uri': self.redirect_uri
         }, headers=self.headers)
         if r_token.status_code != 200 or 'access_token' not in r_token.json() or 'refresh_token' not in r_token.json():
-            raise Exception('Failed to get access token')
+            raise RuntimeError('Failed to get access token')
 
         token = r_token.json()
 
@@ -163,7 +163,7 @@ class NCPAuth(object):
         }, headers=self.headers)
         if r_token.status_code != 200 or 'access_token' not in r_token.json() or 'refresh_token' not in r_token.json():
             # failed to refresh access token, login again
-            raise Exception('Failed to refresh access token')
+            raise RuntimeError('Failed to refresh access token')
 
         token = r_token.json()
 
@@ -187,7 +187,7 @@ class NCPAuth(object):
         if jwt_payload['exp'] < int(time.time()):
             try:
                 self.access_token, self.refresh_token = self.__refresh()
-            except Exception:
+            except RuntimeError:
                 # if failed to refresh, login again
                 self.access_token, self.refresh_token = self.__login()
 
@@ -225,4 +225,4 @@ class NCPAuth(object):
 
 
 if __name__ == '__main__':
-    raise Exception('This file is not meant to be executed')
+    raise RuntimeError('This file is not intended to be run as a standalone script.')
