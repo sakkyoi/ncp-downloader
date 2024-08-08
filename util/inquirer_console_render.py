@@ -80,49 +80,58 @@ def process_input_checkbox(self, pressed):
     _old_process_input(self, pressed)
 
     if pressed == key.CTRL_W:
-        f = input("Filter: ")
-        # Clear the print that inquirer made
-        print(self.terminal.move_up + self.terminal.clear_eol, end="")
+        try:
+            video_filter(self)
+        except KeyboardInterrupt:
+            pass
+        except Exception as e:
+            print(e)
 
-        # check if the filter is a command
-        if not f.startswith("/"):
-            return
 
-        f = f.split(" ")
+def video_filter(self):
+    f = input("Filter: ")
+    # Clear the print that inquirer made
+    print(self.terminal.move_up + self.terminal.clear_eol, end="")
 
-        # check if the filter is valid
-        if len(f) < 2:
-            return
+    # check if the filter is a command
+    if not f.startswith("/"):
+        return
 
-        command = f[0][1:]
-        f = " ".join(f[1:])
+    f = f.split(" ")
 
-        if command == "lambda":
-            # selection = filter(lambda x: eval(f), self.selection)
-            selection = filter(lambda x: eval(f),
-                               [DotDict({
-                                   "index": index,
-                                   "content_code": code,
-                                   "title": self.question.hints[code]
-                               }) for index, code in enumerate(self.question.choices)])
+    # check if the filter is valid
+    if len(f) < 2:
+        return
 
-            selection = [x.index for x in selection]
+    command = f[0][1:]
+    f = " ".join(f[1:])
+
+    if command == "lambda":
+        selection = filter(lambda x: eval(f),
+                           [DotDict({
+                               "index": index,
+                               "content_code": code,
+                               "title": self.question.hints[code]
+                           }) for index, code in enumerate(self.question.choices)])
+
+        selection = [x.index for x in selection]
+    else:
+        selection = [i for i, c in enumerate(self.question.choices) if
+                     self.question.hints[c].lower().find(f.lower()) != -1]
+
+        if command == "add":
+            selection = list(set(self.selection + selection))
+        elif command == "remove":
+            selection = [i for i in self.selection if i not in selection]
+        elif command == "only":
+            selection = selection
         else:
-            selection = [i for i, c in enumerate(self.question.choices) if self.question.hints[c].lower().find(f.lower()) != -1]
+            return
 
-            if command == "add":
-                selection = list(set(self.selection + selection))
-            elif command == "remove":
-                selection = [i for i in self.selection if i not in selection]
-            elif command == "only":
-                selection = selection
-            else:
-                return
+        # add the locked options back if it is removed
+        selection = list(set(selection) | set([i for i, c in enumerate(self.question.choices) if c in self.locked]))
 
-            # add the locked options back if it is removed
-            selection = list(set(selection) | set([i for i, c in enumerate(self.question.choices) if c in self.locked]))
-
-        self.selection = selection
+    self.selection = selection
 
 
 class DotDict(dict):
