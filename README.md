@@ -24,11 +24,11 @@ and extract it to the directory of your choice on your local machine.
 -R, --resume                                Resume download.
 -t, --transcode                             Transcode downloaded videos.
 --ffmpeg /PATH/TO/FFMPEG                    Path to ffmpeg. Defaults to ffmpeg stored in PATH.
---vcodec VCODEC                             Video codec for transcoding.
---acodec ACODEC                             Audio codec for transcoding.
+--vcodec VCODEC                             Video codec for ffmpeg transcoding.
+--acodec ACODEC                             Audio codec for ffmpeg transcoding.
 --ffmpeg-options FFMPEG_OPTIONS             Additional ffmpeg options. (e.g. --ffmpeg-options "-acodec copy -vcodec copy")
---thread THREAD                             Number of threads for downloading. Defaults to 1. (**NOT RECOMMENDED**)
---select-manually                           Select videos manually. This option only works when downloading the whole channel.
+--thread THREAD                             Number of threads for downloading. Defaults to 1. (NOT RECOMMENDED TO EDIT)
+--select-manually                           Manually select videos to download. Only works when downloading the whole channel.
 --username USERNAME                         Username for login.
 --password PASSWORD                         Password for login.
 --debug                                     Enable debug mode (displays debug messages).
