@@ -1,5 +1,4 @@
 from pathlib import Path
-from warnings import warn
 
 from api.api import NCP, ChannelID
 from util.m3u8_downloader import M3U8Downloader
@@ -81,7 +80,8 @@ class ChannelDownloader(object):
             session_id = self.api_client.get_session_id(video)
 
             if session_id is None:
-                warn(f'Video {video} not found or permission denied. Skip.', stacklevel=2)
+                self.progress_manager.live.console.print(
+                    f'Video [bold white]{video}[/bold white] not found or permission denied. Skip.', style='yellow')
                 continue
 
             output_name, _ = self.api_client.get_video_name(video, self.channel_manager.get_title(str(video)))
