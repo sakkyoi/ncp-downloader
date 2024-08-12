@@ -6,7 +6,7 @@ import inquirer
 import typer
 from typing_extensions import Annotated
 from typing import Optional
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 from pathlib import Path
 import pylibimport
 
@@ -189,6 +189,13 @@ def main(
 
         # Check if query is channel or video
         if api_client.get_channel_id(query) is None:
+            # Get video information
+            channel_query = urlparse(query).path.strip('/').split('/')[0]
+            channel_query = str(urlunparse(urlparse(query)._replace(path=f'/{channel_query}')))
+            channel_id = api_client.get_channel_id(channel_query)
+            channel_name = api_client.get_channel_info(channel_id)['fanclub_site_name']
+
+            # Get video session id
             query = urlparse(query).path.strip('/').split('/')[-1]
             session_id = api_client.get_session_id(ContentCode(query))
 
@@ -198,7 +205,7 @@ def main(
 
             output_name, _ = api_client.get_video_name(ContentCode(query))
 
-            output = str(Path(output).joinpath(output_name))
+            output = str(Path(output).joinpath(channel_name).joinpath(output_name))
 
             with progress_manager:
                 m3u8_downloader = M3U8Downloader(api_client, progress_manager, session_id, output, resolution, resume,
