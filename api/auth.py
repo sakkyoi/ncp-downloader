@@ -1,4 +1,5 @@
 from typing import Tuple
+from enum import Enum
 
 import random
 import base64
@@ -6,8 +7,14 @@ import hashlib
 from requests import session
 import json
 from urllib.parse import urlencode, urlparse, parse_qs
-import jwt
-import time
+
+
+class Method(Enum):
+    """
+    Refresh Enum
+    """
+    LOGIN = 1
+    REFRESH = 2
 
 
 class NCPAuth(object):
@@ -23,17 +30,20 @@ class NCPAuth(object):
         auth0_domain (str): auth0 domain
         audience (str): audience
     """
-    def __init__(self, username: str, password: str,
-                 site_base: str, platform_id: str, client_id: str, auth0_domain: str, audience: str) -> None:
+    def __init__(self, username: str, password: str, site_base: str, site_id: str,
+                 platform_id: str, client_id: str, auth0_domain: str, audience: str) -> None:
         self.session = session()
 
         self.username = username
         self.password = password
         self.site_base = site_base
+        self.site_id = site_id
         self.platform_id = platform_id
         self.client_id = client_id
         self.auth0_domain = auth0_domain
         self.audience = audience
+
+        self.api_user_info = f'https://{self.site_base}/fc/fanclub_sites/{self.site_id}/user_info'
 
         # this is used to get openid configuration like authorization_endpoint, token_endpoint
         self.openid_configuration = f'https://{self.auth0_domain}/.well-known/openid-configuration'
@@ -58,7 +68,20 @@ class NCPAuth(object):
         self.access_token, self.refresh_token = self.__initial_token()
 
     def __str__(self) -> str:
-        self.__auto_refresh()
+        """
+        Auto refresh access token if expired, and return it
+        If access token is expired, refresh it
+        If refresh token is expired, login again
+        If login failed, raise RuntimeError
+        """
+        # check if access token is expired
+        if not self.__check_status():
+            try:
+                self.access_token, self.refresh_token = self.__request_token(Method.REFRESH)
+            except RuntimeError:
+                # if failed to refresh, login again
+                self.access_token, self.refresh_token = self.__request_token(Method.LOGIN)
+
         return self.access_token
 
     def __initial_openid(self) -> Tuple[str, str]:
@@ -71,12 +94,17 @@ class NCPAuth(object):
         return openid_configuration['authorization_endpoint'], openid_configuration['token_endpoint']
 
     def __initial_token(self) -> Tuple[str, str]:
+        """
+        Initial token
+
+        Try to get tokens from file, if not found, login
+        """
         try:
             with open(f'tokens_{hashlib.md5(self.username.encode()).hexdigest()}.json', 'r') as f:
                 tokens = json.load(f)
                 return tokens['access_token'], tokens['refresh_token']
         except FileNotFoundError:
-            return self.__login()
+            return self.__request_token(Method.LOGIN)
 
     def __prepare_authorize_url(self) -> str:
         """
@@ -106,64 +134,52 @@ class NCPAuth(object):
 
         return f'{self.authorization_endpoint}?{urlencode(params)}'
 
-    def __login(self) -> Tuple[str, str]:
-        """
-        Login, or Initial from stored token
+    def __request_token(self, method: Method) -> Tuple[str, str]:
+        match method:
+            case Method.LOGIN:
+                # login
+                # workflow:
+                # - get authorize url -> this will redirect to login page
+                # - post login page with username and password -> this will redirect to redirect uri with code
+                # - post token endpoint with code -> this will return access token and refresh token
+                r_login_page = self.session.get(self.__prepare_authorize_url())
+                if r_login_page.status_code != 200:
+                    raise RuntimeError('Failed to get login page')
 
-        workflow:
-        - get authorize url -> this will redirect to login page
-        - post login page with username and password -> this will redirect to redirect uri with code
-        - post token endpoint with code -> this will return access token and refresh token
-        """
-        r_login_page = self.session.get(self.__prepare_authorize_url())
-        if r_login_page.status_code != 200:
-            raise RuntimeError('Failed to get login page')
+                r_redirect = self.session.post(r_login_page.url, {
+                    'username': self.username,
+                    'password': self.password,
+                    'state': parse_qs(urlparse(r_login_page.url).query)['state'][0]
+                }, headers=self.headers)
+                if r_redirect.status_code != 404 and 'code' not in parse_qs(urlparse(r_redirect.url).query):
+                    raise RuntimeError('Failed to login')
 
-        r_redirect = self.session.post(r_login_page.url, {
-            'username': self.username,
-            'password': self.password,
-            'state': parse_qs(urlparse(r_login_page.url).query)['state'][0]
-        }, headers=self.headers)
-        if r_redirect.status_code != 404 and 'code' not in parse_qs(urlparse(r_redirect.url).query):
-            raise RuntimeError('Failed to login')
-
-        r_token = self.session.post(self.token_endpoint, {
-            'client_id': self.client_id,
-            'code_verifier': self.code_verifier,
-            'grant_type': 'authorization_code',
-            'code': parse_qs(urlparse(r_redirect.url).query)['code'][0],
-            'redirect_uri': self.redirect_uri
-        }, headers=self.headers)
-        if r_token.status_code != 200 or 'access_token' not in r_token.json() or 'refresh_token' not in r_token.json():
-            raise RuntimeError('Failed to get access token')
-
-        token = r_token.json()
-
-        # dump tokens to file
-        with open(f'tokens_{hashlib.md5(self.username.encode()).hexdigest()}.json', 'w') as f:
-            json.dump({
-                'access_token': token['access_token'],
-                'refresh_token': token['refresh_token']
-            }, f)
-
-        return token['access_token'], token['refresh_token']
-
-    def __refresh(self) -> Tuple[str, str]:
-        """
-        Refresh access token
-
-        workflow:
-        - post token endpoint with refresh token -> this will return access token and refresh token
-        """
-        r_token = self.session.post(self.token_endpoint, {
-            'client_id': self.client_id,
-            'redirect_uri': self.redirect_uri,
-            'grant_type': 'refresh_token',
-            'refresh_token': self.refresh_token
-        }, headers=self.headers)
-        if r_token.status_code != 200 or 'access_token' not in r_token.json() or 'refresh_token' not in r_token.json():
-            # failed to refresh access token, login again
-            raise RuntimeError('Failed to refresh access token')
+                r_token = self.session.post(self.token_endpoint, {
+                    'client_id': self.client_id,
+                    'code_verifier': self.code_verifier,
+                    'grant_type': 'authorization_code',
+                    'code': parse_qs(urlparse(r_redirect.url).query)['code'][0],
+                    'redirect_uri': self.redirect_uri
+                }, headers=self.headers)
+                if r_token.status_code != 200 or \
+                        'access_token' not in r_token.json() or 'refresh_token' not in r_token.json():
+                    raise RuntimeError('Failed to get access token')
+            case Method.REFRESH:
+                # refresh access token
+                # workflow:
+                # - post token endpoint with refresh token -> this will return access token and refresh token
+                r_token = self.session.post(self.token_endpoint, {
+                    'client_id': self.client_id,
+                    'redirect_uri': self.redirect_uri,
+                    'grant_type': 'refresh_token',
+                    'refresh_token': self.refresh_token
+                }, headers=self.headers)
+                if r_token.status_code != 200 or \
+                        'access_token' not in r_token.json() or 'refresh_token' not in r_token.json():
+                    # failed to refresh access token, login again
+                    raise RuntimeError('Failed to refresh access token')
+            case _:
+                raise ValueError('Invalid refresh type')
 
         token = r_token.json()
 
@@ -176,22 +192,14 @@ class NCPAuth(object):
 
         return token['access_token'], token['refresh_token']
 
-    def __auto_refresh(self) -> None:
+    def __check_status(self) -> bool:
         """
-        Auto refresh access token
-        If access token is expired, refresh it
-        If refresh token is expired, login again
+        Check auth status(by user_info endpoint)
+        This is used to check if access token is expired
         """
-        # check if access token is expired
-        jwt_payload = jwt.decode(self.access_token, options={"verify_signature": False})
-        if jwt_payload['exp'] < int(time.time()):
-            try:
-                self.access_token, self.refresh_token = self.__refresh()
-            except RuntimeError:
-                # if failed to refresh, login again
-                self.access_token, self.refresh_token = self.__login()
+        r = self.session.post(self.api_user_info, headers=self.headers)
 
-        # if access token is not expired, do nothing
+        return r.status_code == 200
 
     @staticmethod
     def __rand(size=43):
