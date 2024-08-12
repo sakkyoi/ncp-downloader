@@ -1,5 +1,15 @@
 `ncp-downloader` is a tool for network performance testing by downloading videos from a well-known online video platform. 
 
+<p align="left">
+  <a href="#installation">Installation</a>
+   • 
+  <a href="#usage">Usage</a>
+   • 
+  <a href="#disclaimer">Disclaimer</a>
+   • 
+  <a href="#license">License</a>
+</p>
+
 # Installation
 Download the latest release from the [Releases](https://github.com/sakkyoi/ncp-downloader/releases/latest) page
 and extract it to the directory of your choice on your local machine.
@@ -7,22 +17,22 @@ and extract it to the directory of your choice on your local machine.
 # Usage
 `ncp QUERY [OUTPUT_DIR] [OPTIONS]`
 
-QUERY is a URL of video or channel.
+`QUERY`: URL of the video or channel.
 
 ```
--r RESOLUTION, --resolution RESOLUTION      Target resolution. Defaults to highest resolution.
+-r RESOLUTION, --resolution RESOLUTION      Target resolution. Defaults to highest resolution available.
 -R, --resume                                Resume download.
--t, --transcode                             Transcode video.
---ffmpeg FFMPEG                             Path to ffmpeg. Defaults to ffmpeg in PATH.
---vcodec VCODEC                             Video codec for transcoding.
---acodec ACODEC                             Audio codec for transcoding.
+-t, --transcode                             Transcode downloaded videos.
+--ffmpeg /PATH/TO/FFMPEG                    Path to ffmpeg. Defaults to ffmpeg stored in PATH.
+--vcodec VCODEC                             Video codec for ffmpeg transcoding.
+--acodec ACODEC                             Audio codec for ffmpeg transcoding.
 --ffmpeg-options FFMPEG_OPTIONS             Additional ffmpeg options. (e.g. --ffmpeg-options "-acodec copy -vcodec copy")
---thread THREAD                             Number of threads for downloading. Defaults to 1. (highly not recommended)
---select-manually                           Select video manually. This option only works with channel.
+--thread THREAD                             Number of threads for downloading. Defaults to 1. (NOT RECOMMENDED TO EDIT)
+--select-manually                           Manually select videos to download. Only works when downloading the whole channel.
 --username USERNAME                         Username for login.
 --password PASSWORD                         Password for login.
---debug                                     Enable debug mode.
---help                                      Show help message.
+--debug                                     Enable debug mode (displays debug messages).
+--help                                      Show help menu.
 ```
 
 **If login credentials are provided, a session token will be generated and saved locally.
@@ -31,41 +41,42 @@ Sometimes this tool may not function properly, delete temp files and folder to m
 (Feel free to modify the .json file if you understand what you are doing.)
 
 ## --select-manually
-When downloading a channel, you can use this option to select the video manually.
-- `arrow up`/`arrow down`, `arrow left`/`arrow right`: Navigate
-- `space`: Select/deselect
-- `enter`: Start downloading
-- `ctrl+r`: Deselct all
-- `ctrl+a`: Select all
-- `ctrl+w`: Use filter
+When downloading the whole channel, you can use this option to manually select the videos to be downloaded.
+- `Arrow Up`/`Arrow Down`, `Arrow Left`/`Arrow Right`: Navigate
+- `Space`: Select / Deselect
+- `Enter`: Start download
+- `Ctrl + A`: Select all
+- `Ctrl + R`: Deselct all
+- `Ctrl + W`: Use filter
 
-The filter is case-insensitive and supports lambda expressions. Video will be selected if matched.
-- `/only <keyword>`: Leave only the video that contains the keyword.
-- `/add <keyword>`: Add the video that contains the keyword. (keep the original selection)
-- `/remove <keyword>`: Remove the video that contains the keyword. (keep the original selection)
-- `/lambda <lambda expression>`: Use lambda expression to filter the video.
+The filter supports either with noarmal keyword-filtering or lambda expression (**Case-Sensitive**). <br>
+Videos will be selected if they match the conditions.
+- `/only <keyword>`: Select videos that contain the keyword only.
+- `/add <keyword>`: Add the videos that contain the keyword to selection.
+- `/remove <keyword>`: Remove the videos that contains the keyword from selection.
+- `/lambda <lambda expression>`: Use lambda expression to filter the videos.
 
 The syntax of the lambda expression does not need to include the `lambda x:` part, and should return a boolean value. <br>
 The following is an example of a lambda expression that selects the video with 
-- title containing "ASMR", 
-- length of title is greater than 30, 
-- index is greater than 10, 
+- title containing "ASMR"; 
+- length of title is greater than 30; 
+- index is greater than 10; 
 - and the content code contains letter "R".
 
 `/lambda "ASMR" in x.title and len(x.title) > 30 and x.index > 10 and "R" in x.content_code`
 
-the x object has the following attributes:
+The x object has the following attributes:
 - `title`: Title of the video.
 - `index`: Index of the video.
 - `content_code`: Content code of the video.
 
 **NOTE: lambda expression is case-sensitive. You can use `.lower()` to make it all lowercase.**<br>
-**python built-in functions and variables are available in the lambda expression.**
-
-
-## `Using this tool may lead to account suspension or ban. Use it at your own discretion.`
+**Python built-in functions and variables are supported in the lambda expression.**
 
 # Disclaimer
+
+**`Using this tool may lead to account suspension or ban. Use it at your own discretion.`**
+
 Please do use this tool responsibly and respect the rights of the content creators.<br>
 You should **ONLY** use this tool for network performance testing under any circumstances.<br>
 Data downloaded using this tool should be for personal use only. Obtain permission from the original creator before use.

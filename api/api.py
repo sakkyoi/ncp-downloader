@@ -64,7 +64,7 @@ class NCP(object):
 
         # initial auth
         if username is not None and password is not None:
-            self.auth = NCPAuth(username, password, site_base,
+            self.auth = NCPAuth(username, password, site_base, self.fanclub_site_id,
                                 self.platform_id, self.auth_client_id, self.auth_base,
                                 urlparse(self.api_base).netloc)
         else:
