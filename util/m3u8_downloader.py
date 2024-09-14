@@ -1,7 +1,7 @@
 import requests
 import m3u8
 from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
+from Crypto.Util.Padding import pad
 import time
 import inquirer
 from pathlib import Path
@@ -125,12 +125,24 @@ class M3U8Downloader(object):
         # update progress bar
         self.progress_manager.reset(self.task, description='Getting key')
 
-        # get key from target video
         r = requests.get(self.target_video.keys[0].absolute_uri)
-
-        self.key = AES.new(r.content, AES.MODE_CBC, get_random_bytes(16))
+        self.key = r.content
 
         time.sleep(self.wait)  # don't spam the server
+
+    def __decrypt(self, content: bytes, media_sequence):
+        """
+        Decrypt video segment
+
+        Update on 2024/09/15, iv should be the media sequence number in big-endian binary
+        representation into a 16-octet (128-bit) buffer and padding (on the left) with zeros.
+        please refer to RFC 8216, Section 5.2:
+        https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-5.2
+        """
+        padded = pad(content, AES.block_size)
+        cipher = AES.new(self.key, AES.MODE_CBC, media_sequence.to_bytes(16, 'big'))
+
+        return cipher.decrypt(padded)
 
     def __init_manager(self) -> None:
         """Initialize M3U8Manager"""
@@ -182,7 +194,7 @@ class M3U8Downloader(object):
         r = requests.get(segment.absolute_uri, headers=self.api_client.headers)
         if r.status_code == 200:
             with open(f'{self.m3u8_manager.temp}/{self.target_video.segments.index(segment)}.ts', 'wb') as f:
-                f.write(self.key.decrypt(r.content))
+                f.write(self.__decrypt(r.content, segment.media_sequence))
 
                 # set the segment as downloaded
                 self.m3u8_manager.set_status(self.target_video.segments.index(segment), True)

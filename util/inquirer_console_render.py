@@ -124,7 +124,7 @@ def video_filter(self):
         elif command == "remove":
             selection = [i for i in self.selection if i not in selection]
         elif command == "only":
-            selection = selection
+            pass
         else:
             return
 
