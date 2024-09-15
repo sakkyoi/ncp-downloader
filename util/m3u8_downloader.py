@@ -1,7 +1,7 @@
 import requests
 import m3u8
 from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
+from Crypto.Util.Padding import unpad
 import time
 import inquirer
 from pathlib import Path
@@ -139,10 +139,9 @@ class M3U8Downloader(object):
         please refer to RFC 8216, Section 5.2:
         https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-5.2
         """
-        padded = pad(content, AES.block_size)
         cipher = AES.new(self.key, AES.MODE_CBC, media_sequence.to_bytes(16, 'big'))
 
-        return cipher.decrypt(padded)
+        return unpad(cipher.decrypt(content), AES.block_size, style='pkcs7')
 
     def __init_manager(self) -> None:
         """Initialize M3U8Manager"""
