@@ -1,7 +1,10 @@
 import requests
 import m3u8
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import unpad
+from cryptography.hazmat.primitives.ciphers import Cipher
+from cryptography.hazmat.primitives.ciphers.algorithms import AES
+from cryptography.hazmat.primitives.ciphers.modes import CBC as RFC8216MediaSegmentEncryptMode
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.padding import PKCS7
 import time
 import inquirer
 from pathlib import Path
@@ -54,9 +57,15 @@ class M3U8Downloader(object):
         # init manager
         self.m3u8_manager = M3U8Manager(f'{self.output}.ts', resume=self.resume)
 
+        # data load from session
         self.video_index = None
         self.target_video = None
-        self.key = None
+
+        # decrypt settings
+        self.algorithm = AES  # Decrypt algorithm
+        self.mode = RFC8216MediaSegmentEncryptMode  # Decrypt mode
+        self.unpadder = PKCS7(128)
+        self.key = None  # Decrypt key
 
         # init task progress
         self.task = self.progress_manager.add_task('Start downloading', total=None)
@@ -139,9 +148,16 @@ class M3U8Downloader(object):
         please refer to RFC 8216, Section 5.2:
         https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis#section-5.2
         """
-        cipher = AES.new(self.key, AES.MODE_CBC, media_sequence.to_bytes(16, 'big'))
+        iv = media_sequence.to_bytes(16, 'big')
+        cipher = Cipher(self.algorithm(self.key), self.mode(iv), backend=default_backend())
 
-        return unpad(cipher.decrypt(content), AES.block_size, style='pkcs7')
+        decryptor = cipher.decryptor()
+        decrypted = decryptor.update(content) + decryptor.finalize()
+
+        unpadder = self.unpadder.unpadder()
+        unpadded = unpadder.update(decrypted) + unpadder.finalize()
+
+        return unpadded
 
     def __init_manager(self) -> None:
         """Initialize M3U8Manager"""
