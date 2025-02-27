@@ -27,7 +27,10 @@ jobs:
       with:
         python-version: 3.12
     - run: pip install -r requirements.txt nuitka
-    - run: nuitka main.py --output-filename=ncp-${{ matrix.name }} --onefile --remove-output --output-dir=dist --include-module=jinxed.terminfo.vtwin10 --lto=yes
+    - if: runner.os == 'Windows'
+      run: nuitka main.py --output-filename=ncp-${{ matrix.name }} --onefile --remove-output --output-dir=dist --lto=yes --include-module=jinxed.terminfo.vtwin10
+    - if: runner.os != 'Windows'
+      run: nuitka main.py --output-filename=ncp-${{ matrix.name }} --onefile --remove-output --output-dir=dist --lto=yes
     - run: ./dist/ncp-${{ matrix.name }} --help
     - run: |
         echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
