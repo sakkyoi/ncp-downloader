@@ -47,6 +47,7 @@ jobs:
         output-file: ncp-${{ matrix.name }}
         output-dir: dist
         lto: yes
+        disable-cache: true
     - run: ./dist/ncp-${{ matrix.name }} --help
     - run: |
         echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
