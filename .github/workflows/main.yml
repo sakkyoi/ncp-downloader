@@ -26,8 +26,26 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: 3.12
-    - run: pip install -r requirements.txt pyinstaller Pillow
-    - run: pyinstaller main.py --onefile --collect-data=grapheme --copy-metadata readchar --name=ncp-${{ matrix.name }} --hidden-import util.inquirer_console_render
+    - run: pip install -r requirements.txt
+    - uses: Nuitka/Nuitka-Action@main
+      if: runner.os == 'Windows'
+      with:
+        nuitka-version: main
+        script-name: main.py
+        mode: onefile
+        output-file: ncp-${{ matrix.name }}
+        output-dir: dist
+        lto: yes
+        include-module: jinxed.terminfo.vtwin10
+    - uses: Nuitka/Nuitka-Action@main
+      if: runner.os != 'Windows'
+      with:
+        nuitka-version: main
+        script-name: main.py
+        mode: onefile
+        output-file: ncp-${{ matrix.name }}
+        output-dir: dist
+        lto: yes
     - run: ./dist/ncp-${{ matrix.name }} --help
     - run: |
         echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV

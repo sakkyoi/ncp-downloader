@@ -8,7 +8,6 @@ from typing_extensions import Annotated
 from typing import Optional
 from urllib.parse import urlparse, urlunparse
 from pathlib import Path
-import pylibimport
 
 from api.api import NCP, ContentCode
 from util.ffmpeg import FFMPEG
@@ -250,7 +249,7 @@ def load_patch():
 
     # import all the .pyd or .so files
     for patch in patches:
-        pylibimport.import_module(patch.stem)
+        __import__(patch.name.split(".")[0])
 
 
 if __name__ == "__main__":
