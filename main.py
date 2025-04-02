@@ -194,6 +194,12 @@ def main(
             channel_id = api_client.get_channel_id(channel_query)
             channel_name = api_client.get_channel_info(channel_id)['fanclub_site_name']
 
+            # Hotfix for some api calling
+            api_client.headers = {
+                **api_client.headers,
+                'fc_site_id': str(channel_id.channel_id),
+            }
+
             # Get video session id
             query = urlparse(query).path.strip('/').split('/')[-1]
             session_id = api_client.get_session_id(ContentCode(query))
@@ -215,6 +221,12 @@ def main(
             # Get channel infomation
             channel_id = api_client.get_channel_id(query)
             channel_name = api_client.get_channel_info(channel_id)['fanclub_site_name']
+
+            # Hotfix for some api calling
+            api_client.headers = {
+                **api_client.headers,
+                'fc_site_id': channel_id.channel_id,
+            }
 
             # Get video list
             video_list = api_client.list_videos(channel_id)
