@@ -31,7 +31,7 @@ func NewEndpoints(baseUrl string) *Endpoints {
 	}
 }
 
-func (e *Endpoints) CheckApiBaseUrl() {
+func (e *Endpoints) checkApiBaseUrl() {
 	if e.ApiBaseUrl == "" {
 		panic("ApiBaseUrl is not set")
 	}
@@ -42,43 +42,43 @@ func (e *Endpoints) GetSettingsUrl() string {
 }
 
 func (e *Endpoints) GetChannelUrl(userName string) string {
-	e.CheckApiBaseUrl()
+	e.checkApiBaseUrl()
 
 	return fmt.Sprintf(e.Channel, e.ApiBaseUrl, fmt.Sprintf("%s/%s", e.SiteBaseUrl, userName))
 }
 
 func (e *Endpoints) GetChannelInfoUrl(channelId string) string {
-	e.CheckApiBaseUrl()
+	e.checkApiBaseUrl()
 
 	return fmt.Sprintf(e.ChannelInfo, e.ApiBaseUrl, channelId)
 }
 
 func (e *Endpoints) GetVideoPagesUrl(contentCode string) string {
-	e.CheckApiBaseUrl()
+	e.checkApiBaseUrl()
 
 	return fmt.Sprintf(e.VideoPages, e.ApiBaseUrl, contentCode)
 }
 
 func (e *Endpoints) GetPublicStatusUrl(contentCode string) string {
-	e.CheckApiBaseUrl()
+	e.checkApiBaseUrl()
 
 	return fmt.Sprintf(e.PublicStatus, e.ApiBaseUrl, contentCode)
 }
 
 func (e *Endpoints) GetSessionIdUrl(contentCode string) string {
-	e.CheckApiBaseUrl()
+	e.checkApiBaseUrl()
 
 	return fmt.Sprintf(e.SessionId, e.ApiBaseUrl, contentCode)
 }
 
 func (e *Endpoints) GetVideoListUrl(channelId string, vodType string, page int, perPage int, sort string) string {
-	e.CheckApiBaseUrl()
+	e.checkApiBaseUrl()
 
 	return fmt.Sprintf(e.VideoList, e.ApiBaseUrl, channelId, vodType, page, perPage, sort)
 }
 
 func (e *Endpoints) GetVideoIndexUrl(sessionId string) string {
-	e.CheckApiBaseUrl()
+	e.checkApiBaseUrl()
 
 	return fmt.Sprintf(e.VideoIndex, sessionId)
 }
