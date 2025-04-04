@@ -8,7 +8,6 @@ type Endpoints struct {
 	ApiBaseUrl   string
 	Settings     string
 	Channel      string
-	Channels     string
 	ChannelInfo  string
 	VideoPages   string
 	PublicStatus string
