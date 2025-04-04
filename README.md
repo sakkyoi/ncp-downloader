@@ -1,4 +1,4 @@
-`ncp-downloader` is a tool for network performance testing by downloading videos from a well-known online video platform. 
+`ncp-downloader` is a tool for network performance testing by downloading videos from a well-known online video platform.
 
 <p align="left">
   <a href="#installation">Installation</a>
@@ -9,6 +9,8 @@
    • 
   <a href="#license">License</a>
 </p>
+
+> This branch is being rewritten. It is currently in progress, and the code is being refactored step-by-step.
 
 # Installation
 Download the latest release from the [Releases](https://github.com/sakkyoi/ncp-downloader/releases/latest) page
@@ -57,10 +59,10 @@ Videos will be selected if they match the conditions.
 - `/lambda <lambda expression>`: Use lambda expression to filter the videos.
 
 The syntax of the lambda expression does not need to include the `lambda x:` part, and should return a boolean value. <br>
-The following is an example of a lambda expression that selects the video with 
-- title containing "ASMR"; 
-- length of title is greater than 30; 
-- index is greater than 10; 
+The following is an example of a lambda expression that selects the video with
+- title containing "ASMR";
+- length of title is greater than 30;
+- index is greater than 10;
 - and the content code contains letter "R".
 
 `/lambda "ASMR" in x.title and len(x.title) > 30 and x.index > 10 and "R" in x.content_code`
