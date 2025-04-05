@@ -2,7 +2,7 @@ package api
 
 import (
 	"fmt"
-	"github.com/sakkyoi/ncp-downloader/pkg/request"
+	"github.com/sakkyoi/ncp-downloader/request"
 	"log"
 	"net/http"
 	"strconv"

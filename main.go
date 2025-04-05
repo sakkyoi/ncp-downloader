@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/alexflint/go-arg"
-	"github.com/sakkyoi/ncp-downloader/pkg/config"
+	"github.com/sakkyoi/ncp-downloader/config"
 )
 
 func main() {
