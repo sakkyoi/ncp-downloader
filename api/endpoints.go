@@ -13,7 +13,6 @@ type Endpoints struct {
 	PublicStatus string
 	SessionId    string
 	VideoList    string
-	VideoIndex   string
 }
 
 func NewEndpoints(baseUrl string) *Endpoints {
@@ -26,7 +25,6 @@ func NewEndpoints(baseUrl string) *Endpoints {
 		PublicStatus: "%s/video_pages/%s/public_status",
 		SessionId:    "%s/video_pages/%s/session_ids",
 		VideoList:    "%s/fanclub_sites/%d/video_pages?vod_type=%d&page=%d&per_page=%d&sort=%s",
-		VideoIndex:   "https://hls-auth.cloud.stream.co.jp/auth/index.m3u8?session_id=%s",
 	}
 }
 
@@ -74,10 +72,4 @@ func (e *Endpoints) GetVideoListUrl(channelId int, vodType int, page int, perPag
 	e.checkApiBaseUrl()
 
 	return fmt.Sprintf(e.VideoList, e.ApiBaseUrl, channelId, vodType, page, perPage, sort)
-}
-
-func (e *Endpoints) GetVideoIndexUrl(sessionId string) string {
-	e.checkApiBaseUrl()
-
-	return fmt.Sprintf(e.VideoIndex, sessionId)
 }
