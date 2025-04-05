@@ -21,11 +21,11 @@ func NewEndpoints(baseUrl string) *Endpoints {
 		SiteBaseUrl:  baseUrl,
 		Settings:     "%s/site/settings.json",
 		Channel:      "%s/content_providers/channel_domain?current_site_domain=%s",
-		ChannelInfo:  "%s/fanclub_sites/%s/page_base_info",
+		ChannelInfo:  "%s/fanclub_sites/%d/page_base_info",
 		VideoPages:   "%s/video_pages/%s",
 		PublicStatus: "%s/video_pages/%s/public_status",
 		SessionId:    "%s/video_pages/%s/session_ids",
-		VideoList:    "%s/fanclub_sites/%s/video_pages?vod_type=%d&page=%d&per_page=%d&sort=%s",
+		VideoList:    "%s/fanclub_sites/%d/video_pages?vod_type=%d&page=%d&per_page=%d&sort=%s",
 		VideoIndex:   "https://hls-auth.cloud.stream.co.jp/auth/index.m3u8?session_id=%s",
 	}
 }
@@ -46,7 +46,7 @@ func (e *Endpoints) GetChannelUrl(userName string) string {
 	return fmt.Sprintf(e.Channel, e.ApiBaseUrl, fmt.Sprintf("%s/%s", e.SiteBaseUrl, userName))
 }
 
-func (e *Endpoints) GetChannelInfoUrl(channelId string) string {
+func (e *Endpoints) GetChannelInfoUrl(channelId int) string {
 	e.checkApiBaseUrl()
 
 	return fmt.Sprintf(e.ChannelInfo, e.ApiBaseUrl, channelId)
@@ -70,7 +70,7 @@ func (e *Endpoints) GetSessionIdUrl(contentCode string) string {
 	return fmt.Sprintf(e.SessionId, e.ApiBaseUrl, contentCode)
 }
 
-func (e *Endpoints) GetVideoListUrl(channelId string, vodType string, page int, perPage int, sort string) string {
+func (e *Endpoints) GetVideoListUrl(channelId int, vodType int, page int, perPage int, sort string) string {
 	e.checkApiBaseUrl()
 
 	return fmt.Sprintf(e.VideoList, e.ApiBaseUrl, channelId, vodType, page, perPage, sort)

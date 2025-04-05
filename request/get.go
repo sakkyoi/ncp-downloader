@@ -9,7 +9,7 @@ import (
 
 // Get sends a GET request to the specified URL with the provided headers.
 func Get(url string, header http.Header) (io.ReadCloser, error) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func Get(url string, header http.Header) (io.ReadCloser, error) {
 	return res.Body, nil
 }
 
-// GetJSON sends a GET request to the specified URL with the provided headers and decodes the JSON response into a map.
+// GetJSON sends a GET request to the specified URL with the provided headers and decodes the JSON response into the provided variable.
 func GetJSON(url string, header http.Header, v any) error {
 	res, err := Get(url, header)
 	if err != nil {
