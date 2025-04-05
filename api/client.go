@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"github.com/sakkyoi/ncp-downloader/request"
+	"github.com/sakkyoi/ncp-downloader/util"
 	"log"
 	"net/http"
 	"strconv"
@@ -13,12 +14,12 @@ type Client struct {
 	Endpoints *Endpoints
 }
 
-func NewClient(siteBase string, userName string) *Client {
-	endpoints := NewEndpoints(fmt.Sprintf("https://%s", siteBase))
+func NewClient(queryParser *util.QueryParser) *Client {
+	endpoints := NewEndpoints(fmt.Sprintf("%s://%s", queryParser.Scheme, queryParser.Host))
 
 	// initialize header
 	header := http.Header{
-		"Origin":        {siteBase},
+		"Origin":        {endpoints.SiteBaseUrl},
 		"Fc_use_device": {"null"},
 	}
 
@@ -49,7 +50,7 @@ func NewClient(siteBase string, userName string) *Client {
 				} `json:"content_providers"`
 			} `json:"data"`
 		}{}
-		if err := request.GetJSON(endpoints.GetChannelUrl(userName), header, channel); err != nil {
+		if err := request.GetJSON(endpoints.GetChannelUrl(queryParser.UserName), header, channel); err != nil {
 			log.Panic(err)
 		}
 
