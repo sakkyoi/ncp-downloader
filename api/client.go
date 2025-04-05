@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/sakkyoi/ncp-downloader/request"
 	"github.com/sakkyoi/ncp-downloader/util"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -31,7 +30,7 @@ type Channel struct {
 	} `json:"data"`
 }
 
-func NewClient(queryParser *util.QueryParser) *Client {
+func NewClient(queryParser *util.QueryParser) (*Client, error) {
 	endpoints := NewEndpoints(fmt.Sprintf("%s://%s", queryParser.Scheme, queryParser.Host))
 
 	// initialize header
@@ -48,7 +47,7 @@ func NewClient(queryParser *util.QueryParser) *Client {
 	// get api settings
 	apiBaseUrl, fanclubSiteId, _, err := client.getApiSettings()
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
 
 	endpoints.ApiBaseUrl = apiBaseUrl       // set api base url
@@ -57,7 +56,7 @@ func NewClient(queryParser *util.QueryParser) *Client {
 	// convert fanclubSiteId to int and
 	channelId, err := strconv.Atoi(fanclubSiteId)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	client.ChannelId = channelId
 
@@ -65,7 +64,7 @@ func NewClient(queryParser *util.QueryParser) *Client {
 	if fanclubSiteId == "1" {
 		channel := &Channel{}
 		if err := request.GetJSON(endpoints.GetChannelUrl(queryParser.ChannelName), header, channel); err != nil {
-			log.Panic(err)
+			return nil, err
 		}
 
 		client.Channel = channel
@@ -74,7 +73,7 @@ func NewClient(queryParser *util.QueryParser) *Client {
 		client.ChannelId = channel.Data.ContentProviders.FanclubSite.Id
 	}
 
-	return client
+	return client, nil
 }
 
 type Settings struct {
@@ -108,7 +107,7 @@ type ChannelInfo struct {
 // GetChannelInfo returns channel info including fanclub site name
 func (c *Client) GetChannelInfo() (*ChannelInfo, error) {
 	if c.ChannelId == 0 {
-		panic("ChannelId not set")
+		return nil, errors.New("ChannelId not set")
 	}
 
 	channelInfo := &ChannelInfo{}
