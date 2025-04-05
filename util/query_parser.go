@@ -10,7 +10,7 @@ type QueryParser struct {
 	Scheme      string
 	Host        string
 	Path        string
-	UserName    string
+	ChannelName string
 	ContentCode string // if query is a video
 }
 
@@ -22,8 +22,8 @@ func NewQueryParser(query string) *QueryParser {
 
 	path := strings.Split(strings.Trim(u.Path, "/"), "/")
 
-	var userName, contentCode string
-	userName = path[0] // the first part of the path must be the username
+	var channelName, contentCode string
+	channelName = path[0] // the first part of the path must be the channel name
 
 	if len(path) > 1 {
 		contentCode = path[len(path)-1] // the last part of the path must be the content code
@@ -34,7 +34,7 @@ func NewQueryParser(query string) *QueryParser {
 		Scheme:      u.Scheme,
 		Host:        u.Host,
 		Path:        u.Path,
-		UserName:    userName,
+		ChannelName: channelName,
 		ContentCode: contentCode,
 	}
 }

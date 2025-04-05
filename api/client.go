@@ -50,7 +50,7 @@ func NewClient(queryParser *util.QueryParser) *Client {
 				} `json:"content_providers"`
 			} `json:"data"`
 		}{}
-		if err := request.GetJSON(endpoints.GetChannelUrl(queryParser.UserName), header, channel); err != nil {
+		if err := request.GetJSON(endpoints.GetChannelUrl(queryParser.ChannelName), header, channel); err != nil {
 			log.Panic(err)
 		}
 
