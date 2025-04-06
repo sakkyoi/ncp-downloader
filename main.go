@@ -2,9 +2,12 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/alexflint/go-arg"
 	"github.com/charmbracelet/log"
 	"github.com/sakkyoi/ncp-downloader/config"
+	"github.com/sakkyoi/ncp-downloader/downloader"
+	"github.com/sakkyoi/ncp-downloader/util"
 	"os"
 )
 
@@ -24,7 +27,7 @@ func main() {
 		p.WriteHelp(os.Stdout)
 		os.Exit(0)
 	case errors.Is(err, arg.ErrVersion):
-		log.Info("", "version", args.Version())
+		fmt.Println(args.Version())
 		os.Exit(0)
 	case err == nil:
 		// do nothing
@@ -35,4 +38,10 @@ func main() {
 	// config logger
 	log.SetReportTimestamp(args.LogTimestamp)
 	log.SetLevel(args.LogLevel.GetLevel())
+
+	log.Debug(nil, "args", args)
+
+	// build downloader
+	queryParser := util.NewQueryParser(args.Query)
+	downloader.BuildDownloader(queryParser, args).Start()
 }

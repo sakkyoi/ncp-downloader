@@ -24,6 +24,7 @@ type Args struct {
 	Output       string `arg:"-o,--output" help:"Output path" default:"output"`
 	LogTimestamp bool   `arg:"-t,--timestamp" help:"Add timestamp to the log" default:"false"`
 	LogLevel     Level  `arg:"-l,--log-level" help:"Log level" default:"info"`
+	MaxThreads   int    `arg:"--max-threads" help:"Maximum number of threads used for downloading" default:"3"`
 }
 
 func (Args) Version() string {
