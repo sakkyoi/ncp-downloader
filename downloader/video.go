@@ -100,8 +100,7 @@ func (v *video) start() {
 			// download segment
 			log.Debug(nil, "start", segment.SeqId, "segment", segment.URI)
 
-			err := v.downloadSegment(segment)
-			if err != nil {
+			if err := v.downloadSegment(segment); err != nil {
 				log.Error(err)
 				return
 			}
@@ -118,7 +117,11 @@ func (*video) getMasterPlaylist(authencatedUrl string, sessionId string) (*m3u8.
 	if err != nil {
 		return nil, err
 	}
-	defer master.Close()
+	defer func() {
+		if err := master.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
 
 	p, listType, err := m3u8.DecodeFrom(master, true)
 	if err != nil {
@@ -136,7 +139,11 @@ func (*video) getMediaPlaylist(masterPlaylist *m3u8.MasterPlaylist) (*m3u8.Media
 	if err != nil {
 		return nil, err
 	}
-	defer media.Close()
+	defer func() {
+		if err := media.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
 
 	p, listType, err := m3u8.DecodeFrom(media, true)
 	if err != nil {
@@ -157,7 +164,11 @@ func (*video) getKey(mediaPlaylist *m3u8.MediaPlaylist) (*bytes.Buffer, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer key.Close()
+	defer func() {
+		if err := key.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
 
 	_, err = io.Copy(&buf, key)
 	if err != nil {
@@ -172,7 +183,11 @@ func (v *video) downloadSegment(segment *m3u8.MediaSegment) error {
 	if err != nil {
 		return err
 	}
-	defer data.Close()
+	defer func() {
+		if err := data.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, data)
@@ -196,10 +211,13 @@ func (v *video) downloadSegment(segment *m3u8.MediaSegment) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
 
-	_, err = io.Copy(file, &buf)
-	if err != nil {
+	if _, err = io.Copy(file, &buf); err != nil {
 		return err
 	}
 

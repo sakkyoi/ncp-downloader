@@ -3,6 +3,7 @@ package request
 import (
 	"encoding/json"
 	"errors"
+	"github.com/charmbracelet/log"
 	"io"
 	"net/http"
 )
@@ -34,11 +35,14 @@ func PostJSON(url string, header http.Header, body io.Reader, v any) error {
 	if err != nil {
 		return err
 	}
-	defer res.Close()
+	defer func() {
+		if err := res.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
 
 	decoder := json.NewDecoder(res)
-	err = decoder.Decode(v)
-	if err != nil {
+	if err = decoder.Decode(v); err != nil {
 		return err
 	}
 
