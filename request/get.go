@@ -34,6 +34,7 @@ func GetJSON(url string, header http.Header, v any) error {
 	if err != nil {
 		return err
 	}
+	defer res.Close()
 
 	decoder := json.NewDecoder(res)
 	err = decoder.Decode(v)

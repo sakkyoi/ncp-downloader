@@ -232,6 +232,7 @@ func (c *Client) GetMasterPlaylist(authencatedUrl string, sessionId string) (*m3
 	if err != nil {
 		return nil, err
 	}
+	defer master.Close()
 
 	p, listType, err := m3u8.DecodeFrom(master, true)
 	if err != nil {
@@ -249,6 +250,7 @@ func (c *Client) GetMediaPlaylist(mediaUrl string) (*m3u8.MediaPlaylist, error) 
 	if err != nil {
 		return nil, err
 	}
+	defer media.Close()
 
 	p, listType, err := m3u8.DecodeFrom(media, true)
 	if err != nil {
