@@ -25,6 +25,8 @@ type Args struct {
 	LogTimestamp bool   `arg:"-t,--timestamp" help:"Add timestamp to the log" default:"false"`
 	LogLevel     Level  `arg:"-l,--log-level" help:"Log level" default:"info"`
 	MaxThreads   int    `arg:"--max-threads" help:"Maximum number of threads used for downloading" default:"3"`
+	NameFormat   string `arg:"--name-format" help:"Name format for the output file" default:"{date} {title} [{content_code}]"`
+	UnknownTitle string `arg:"--unknown-title" help:"Title to use when the title is unknown" default:"unknown"`
 }
 
 func (Args) Version() string {

@@ -202,8 +202,7 @@ func (v *video) downloadSegment(segment *m3u8.MediaSegment) error {
 	}
 
 	// save decrypted data to file
-	// TODO: title
-	path := filepath.Join(v.Args.Output, fmt.Sprintf("temp_%s", v.VideoPage.Data.VideoPage.Title), fmt.Sprintf("%d.ts", segment.SeqId))
+	path := filepath.Join(v.Args.Output, fmt.Sprintf("temp_%s", v.getFileName()), fmt.Sprintf("%d.ts", segment.SeqId))
 
 	err = os.MkdirAll(filepath.Dir(path), os.ModePerm)
 
@@ -246,4 +245,20 @@ func (v *video) decryptSegment(seq uint64, data *bytes.Buffer) error {
 	data.Truncate(len(data.Bytes()) - pad)
 
 	return nil
+}
+
+func (v *video) getFileName() string {
+	fileName := v.Args.NameFormat
+	fileName = strings.ReplaceAll(fileName, "{date}", v.VideoPage.Data.VideoPage.LiveStartedAt.Format("2006-01-02"))
+	fileName = strings.ReplaceAll(fileName, "{released_at}", v.VideoPage.Data.VideoPage.ReleasedAt.Format("2006-01-02"))
+
+	if v.VideoPage.Data.VideoPage.Title == "" {
+		fileName = strings.ReplaceAll(fileName, "{title}", v.Args.UnknownTitle)
+	} else {
+		fileName = strings.ReplaceAll(fileName, "{title}", v.VideoPage.Data.VideoPage.Title)
+	}
+
+	fileName = strings.ReplaceAll(fileName, "{content_code}", v.ContentCode)
+
+	return fileName
 }
