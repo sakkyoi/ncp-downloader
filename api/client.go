@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/grafov/m3u8"
 	"github.com/sakkyoi/ncp-downloader/request"
 	"github.com/sakkyoi/ncp-downloader/util"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 type Client struct {
@@ -225,41 +223,4 @@ func (c *Client) GetVideoPage(contentCode string) (*VideoPage, error) {
 	}
 
 	return videoPage, nil
-}
-
-func (c *Client) GetMasterPlaylist(authencatedUrl string, sessionId string) (*m3u8.MasterPlaylist, error) {
-	master, err := request.Get(strings.Replace(authencatedUrl, "{session_id}", sessionId, 1), http.Header{})
-	if err != nil {
-		return nil, err
-	}
-	defer master.Close()
-
-	p, listType, err := m3u8.DecodeFrom(master, true)
-	if err != nil {
-		return nil, err
-	}
-	if listType != m3u8.MASTER {
-		return nil, errors.New("not a master playlist")
-	}
-
-	return p.(*m3u8.MasterPlaylist), nil
-}
-
-func (c *Client) GetMediaPlaylist(mediaUrl string) (*m3u8.MediaPlaylist, error) {
-	media, err := request.Get(mediaUrl, http.Header{})
-	if err != nil {
-		return nil, err
-	}
-	defer media.Close()
-
-	p, listType, err := m3u8.DecodeFrom(media, true)
-	if err != nil {
-		return nil, err
-	}
-
-	if listType != m3u8.MEDIA {
-		return nil, errors.New("not a media playlist")
-	}
-
-	return p.(*m3u8.MediaPlaylist), nil
 }
