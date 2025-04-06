@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/bits-and-blooms/bitset"
 	"github.com/charmbracelet/log"
 	"github.com/grafov/m3u8"
 	"github.com/sakkyoi/ncp-downloader/api"
@@ -26,6 +27,8 @@ type video struct {
 	Args        config.Args
 	Key         *bytes.Buffer
 	VideoPage   *api.VideoPage
+	Status      *bitset.BitSet
+	StatusMutex sync.Mutex
 }
 
 func newVideo(contentCode string, apiClient *api.Client, args config.Args) *video {
@@ -84,6 +87,14 @@ func (v *video) start() {
 
 	log.Debug(nil, "key", key.Bytes())
 
+	// load status
+	if err := v.loadStatus(len(mediaPlaylist.GetAllSegments())); err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Debug(nil, "loadStatus", v.Status)
+
 	// download video
 	sem := make(chan struct{}, v.Args.MaxThreads)
 	var wg sync.WaitGroup
@@ -98,18 +109,137 @@ func (v *video) start() {
 			defer func() { <-sem }() // release semaphore
 
 			// download segment
-			log.Debug(nil, "start", segment.SeqId, "segment", segment.URI)
+			log.Debug("start", "seq", segment.SeqId, "segment", segment.URI)
+
+			if v.checkStatus(segment.SeqId) {
+				log.Debug("already downloaded", "seq", segment.SeqId, "segment", segment.URI)
+				return
+			}
 
 			if err := v.downloadSegment(segment); err != nil {
 				log.Error(err)
 				return
 			}
 
-			log.Debug(nil, "end", segment.SeqId, "segment", segment.URI)
+			// set status
+			if err := v.setStatus(segment.SeqId); err != nil {
+				log.Error(err)
+				return
+			}
+
+			log.Debug("end", "seq", segment.SeqId, "segment", segment.URI)
 		}(segment)
 	}
 
 	wg.Wait()
+
+	// concatenate segments into one file
+	file, err := os.Create(filepath.Join(v.Args.Output, fmt.Sprintf("%s.ts", v.getFileName())))
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
+
+	for _, segment := range mediaPlaylist.GetAllSegments() {
+		path := filepath.Join(v.Args.Output, fmt.Sprintf("temp_%s", v.getFileName()), fmt.Sprintf("%d.ts", segment.SeqId))
+
+		data, err := os.ReadFile(path)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		if _, err := file.Write(data); err != nil {
+			log.Error(err)
+			return
+		}
+
+		if err := os.Remove(path); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+}
+
+func (v *video) checkStatus(seq uint64) bool {
+	return v.Status.Test(uint(seq))
+}
+
+func (v *video) setStatus(seq uint64) error {
+	v.StatusMutex.Lock()
+	defer v.StatusMutex.Unlock()
+
+	v.Status.Set(uint(seq))
+
+	// TODO: Need to find a solution to not dump status every time a segment is downloaded (something like defer but defer not work when interrupted)
+	if err := v.dumpStatus(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (v *video) dumpStatus() error {
+	log.Debug(nil, "status", v.Status)
+
+	// save status to file
+	path := filepath.Join(v.Args.Output, fmt.Sprintf("%s.status", v.getFileName()))
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
+
+	if _, err := v.Status.WriteTo(file); err != nil {
+		return err
+	}
+
+	log.Debug(nil, "status saved to", path)
+
+	return nil
+}
+
+func (v *video) loadStatus(length int) error {
+	v.Status = bitset.New(uint(length))
+	// check if status file exists
+	path := filepath.Join(v.Args.Output, fmt.Sprintf("%s.status", v.getFileName()))
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil
+	}
+
+	// load status from file
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
+
+	if _, err := v.Status.ReadFrom(file); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (v *video) countStatusFinished() uint {
+	return v.Status.Count()
+}
+
+func (v *video) countStatusTotal() uint {
+	return v.Status.Len()
 }
 
 func (*video) getMasterPlaylist(authencatedUrl string, sessionId string) (*m3u8.MasterPlaylist, error) {
@@ -233,7 +363,7 @@ func (v *video) decryptSegment(seq uint64, data *bytes.Buffer) error {
 	iv := make([]byte, aes.BlockSize)
 	binary.BigEndian.PutUint64(iv[8:], seq)
 
-	log.Debug(nil, "iv", iv)
+	log.Debug(nil, "seq", seq, "iv", iv)
 
 	mode := cipher.NewCBCDecrypter(block, iv) // create new CBC decrypter
 
