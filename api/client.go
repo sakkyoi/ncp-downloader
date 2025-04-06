@@ -8,7 +8,24 @@ import (
 	"github.com/sakkyoi/ncp-downloader/util"
 	"net/http"
 	"strconv"
+	"time"
 )
+
+type NCPTime struct {
+	time.Time
+}
+
+func (t *NCPTime) UnmarshalJSON(b []byte) error {
+	str := string(b)
+	parsedTime, err := time.Parse("\"2006-01-02 15:04:05\"", str)
+	if err != nil {
+		return err
+	}
+
+	t.Time = parsedTime
+
+	return nil
+}
 
 type Client struct {
 	Header    http.Header
@@ -186,7 +203,7 @@ func (c *Client) GetSessionId(contentCode string) (string, error) {
 type PublicStatus struct {
 	Data struct {
 		VideoPage struct {
-			ReleasedAt string `json:"released_at"`
+			ReleasedAt NCPTime `json:"released_at"`
 		} `json:"video_page"`
 	} `json:"data"`
 }
@@ -204,10 +221,10 @@ func (c *Client) GetPublicStatus(contentCode string) (*PublicStatus, error) {
 type VideoPage struct {
 	Data struct {
 		VideoPage struct {
-			Title         string `json:"title"`
-			ThumbnailUrl  string `json:"thumbnail_url"`
-			LiveStartedAt string `json:"live_started_at"`
-			ReleasedAt    string `json:"released_at"`
+			Title         string  `json:"title"`
+			ThumbnailUrl  string  `json:"thumbnail_url"`
+			LiveStartedAt NCPTime `json:"live_started_at"`
+			ReleasedAt    NCPTime `json:"released_at"`
 			VideoStream   struct {
 				AuthencatedUrl string `json:"authenticated_url"`
 			} `json:"video_stream"`
