@@ -225,7 +225,7 @@ def main(
             # Hotfix for some api calling
             api_client.headers = {
                 **api_client.headers,
-                'fc_site_id': channel_id.channel_id,
+                'fc_site_id': site(channel_id.channel_id),
             }
 
             # Get video list
