@@ -5,6 +5,7 @@ import json
 from urllib.parse import urlparse, urljoin
 from datetime import datetime
 from pathvalidate import sanitize_filename
+from util.deep_get import deep_get
 
 from .auth import NCPAuth
 
@@ -84,15 +85,17 @@ class NCP(object):
         req = requests.get(self.api_settings, headers=self.headers)
         resp = req.json()
 
-        return resp['api_base_url'], resp['fanclub_site_id'], resp['platform_id']
+        # Return None will cause error, but it's ok, will be fixed in future
+        return deep_get(resp, ['api_base_url']), deep_get(resp, ['fanclub_site_id']), deep_get(resp, ['platform_id'])
 
     def __initial_auth(self) -> Tuple[str, str]:
         """Initial auth base from login api"""
         req = requests.get(self.api_login % self.fanclub_site_id, headers=self.headers)
         resp = req.json()
 
-        return (resp['data']['fanclub_site']['fanclub_group']['auth0_domain'],
-                resp['data']['fanclub_site']['auth0_web_client_id'])
+        # Return None will cause error, but it's ok, will be fixed in future
+        return (deep_get(resp, ['data', 'fanclub_site', 'fanclub_group', 'auth0_domain'], None),
+                deep_get(resp, ['data', 'fanclub_site', 'auth0_web_client_id'], None))
 
     def get_channel_id(self, query: str) -> Optional[ChannelID]:
         """Get channel id from channel domain or name"""
@@ -117,7 +120,7 @@ class NCP(object):
     def list_channels(self) -> list:
         """Get channel list"""
         r = requests.get(self.api_channels, headers=self.headers)
-        return r.json()['data']['content_providers']
+        return deep_get(r.json(), ['data', 'content_providers'], None)
 
     def list_videos(self,
                     channel_id: ChannelID,
@@ -127,13 +130,14 @@ class NCP(object):
                     sort: str = '-display_date') -> list:
         """Get video list of channel from channel id"""
         r = requests.get(self.api_video_list % (channel_id, vod_type, page, per_page, sort), headers=self.headers)
-        video_list = r.json()['data']['video_pages']['list']
-        if len(r.json()['data']['video_pages']['list']) < r.json()['data']['video_pages']['total']:
-            while len(video_list) < r.json()['data']['video_pages']['total']:
+
+        video_list = deep_get(r.json(), ['data', 'video_pages', 'list'], [])
+        if len(deep_get(r.json(), ['data', 'video_pages', 'list'], [])) < deep_get(r.json(), ['data', 'video_pages', 'total'], 0):
+            while len(video_list) < deep_get(r.json(), ['data', 'video_pages', 'total'], 0):
                 page += 1
                 r = requests.get(self.api_video_list % (channel_id, vod_type, page, per_page, sort),
                                  headers=self.headers)
-                video_list += r.json()['data']['video_pages']['list']
+                video_list += deep_get(r.json(), ['data', 'video_pages', 'list'])
         return video_list
 
     def list_lives(self, channel_id: str, live_type) -> list:
@@ -149,20 +153,20 @@ class NCP(object):
                                        **self.headers),
                           data=json.dumps({}))
         if r.status_code == 200:
-            return SessionID(r.json()['data']['session_id'])
+            return SessionID(deep_get(r.json(), ['data', 'session_id'], None))
         else:
             return None
 
     def get_public_status(self, content_code: ContentCode) -> dict:
         """Get public status of video from content code"""
         r = requests.get(self.api_public_status % content_code, headers=self.headers)
-        return r.json()['data']['video_page']
+        return deep_get(r.json(), ['data', 'video_page'], None)
 
     def get_video_page(self, content_code: ContentCode) -> Optional[dict]:
         """Get video page of video from content code"""
         r = requests.get(self.api_video_page % content_code, headers=self.headers)
         if r.status_code == 200:
-            return r.json()['data']['video_page']
+            return deep_get(r.json(), ['data', 'video_page'], None)
         else:
             return None  # if video is private, it will be error.
 
@@ -172,20 +176,20 @@ class NCP(object):
         video_page = self.get_video_page(content_code)
 
         if video_page is not None:
-            title = video_page['title']
+            title = deep_get(video_page, ['title'], 'unknown')
         else:
             title = known_title if known_title is not None else 'unknown'
 
         title = sanitize_filename(title, '_')  # sanitize filename
 
         if video_page is not None:
-            release_at = datetime.strptime(video_page['released_at'], '%Y-%m-%d %H:%M:%S')
+            release_at = datetime.strptime(deep_get(video_page, ['released_at'], '1970-01-01 00:00:00'), '%Y-%m-%d %H:%M:%S')
             return _format.replace('%release_date%', release_at.strftime('%Y-%m-%d')) \
                 .replace('%title%', title) \
                 .replace('%content_code%', str(content_code)), video_page['title']
         else:
             public_status = self.get_public_status(content_code)
-            release_at = datetime.strptime(public_status['released_at'], '%Y-%m-%d %H:%M:%S')
+            release_at = datetime.strptime(deep_get(public_status, ['released_at'], '1970-01-01 00:00:00'), '%Y-%m-%d %H:%M:%S')
             return _format.replace('%release_date%', release_at.strftime('%Y-%m-%d')) \
                 .replace('%title%', title) \
                 .replace('%content_code%', str(content_code)), 'unknown'
