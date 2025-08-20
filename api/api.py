@@ -101,14 +101,16 @@ class NCP(object):
         """Get channel id from channel domain or name"""
         query = urlparse(query)
 
-        if self.fanclub_site_id == '1':
+        r = requests.get(urljoin(query.geturl(), './site/settings.json'))
+        if r.status_code // 100 != 2 or r.headers['Content-Type'] != 'application/json':
+            return None
+
+        if deep_get(r.json(), ['channel'], True):
             for channel in self.list_channels():
                 if channel['domain'] == query.geturl().strip('/'):
-                    return ChannelID(channel['id'])
+                    return ChannelID(deep_get(channel, ['id']))
         else:
-            r = requests.get(urljoin(query.geturl(), './site/settings.json'))
-            if r.status_code == 200 and r.headers['Content-Type'] == 'application/json':
-                return ChannelID(r.json()['fanclub_site_id'])
+            return ChannelID(deep_get(r.json(), ['fanclub_site_id']))
 
         return None
 
